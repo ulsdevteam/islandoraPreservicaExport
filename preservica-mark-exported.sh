@@ -30,12 +30,23 @@ do
   t=`basename $i | sed 's"\.zip$"/data/DC.*"'`
   # find the DC files for any child objects
   s=`basename $i | sed 's"\.zip$"/data/*/DC.*"'`
-  # extract the DCs to the working directory
-  unzip -qd $TMPDIR $i "$t" "$s"
+  # extract the DC to the working directory
+  unzip -qd $TMPDIR $i "$t"
   if [[ $? -ne 0 ]]
   then
     >&2 echo "Failed to unzip $t from $i"
     ERRORFLAG=1
+  fi
+  # optionally, extract the child DCs to the working directory
+  unzip -qql $i "$s" > /dev/null
+  if [[ $? -eq 0 ]]
+  then
+    unzip -qd $TMPDIR $i "$s"
+    if [[ $? -ne 0 ]]
+    then
+      >&2 echo "Failed to unzip $s from $i"
+      ERRORFLAG=1
+    fi
   fi
 done
 mkdir $TMPDIR/Bag-dates
@@ -48,10 +59,10 @@ do
   then
     # to find the original Bag name, remove the TEMPDIR prefix, and data suffix
     f=${i#"$TMPDIR/"}
-    f=${f%%"/data*"}
+    f=${f%%/data*}
     # Set a file with the modification datetime of the Bag, in a Datastream CRUD naming
     CRUD=`echo $PID | sed 's/:/_/'`
-    touch -r $BAGDIR/$f $TMPDIR/Bag-dates/$CRUD
+    touch -r $BAGDIR/${f}.zip $TMPDIR/Bag-dates/$CRUD
     # Echo the PID to our list
     echo $PID
   else
