@@ -49,8 +49,9 @@ do
     fi
   fi
 done
+# create a directory where we can store files representing each bagged object, with the timestamp of when the bag was created
 mkdir $TMPDIR/Bag-dates
-# iterate across each DC file, writing into a PID list for Datastream CRUD
+# iterate across each DC file, writing into a PID list for Datastream CRUD and capturing the timestamp of the original bag
 for i in $TMPDIR/*/data/DC.* $TMPDIR/*/data/*/DC.*
 do
   # extract the PID (dc:identifier, begins with "pitt:")
@@ -61,8 +62,8 @@ do
     f=${i#"$TMPDIR/"}
     f=${f%%/data*}
     # Set a file with the modification datetime of the Bag, in a Datastream CRUD naming
-    CRUD=`echo $PID | sed 's/:/_/'`
-    touch -r $BAGDIR/${f}.zip $TMPDIR/Bag-dates/$CRUD
+    CRUDname=`echo $PID | sed 's/:/_/'`
+    touch -r $BAGDIR/${f}.zip $TMPDIR/Bag-dates/$CRUDname
     # Echo the PID to our list
     echo $PID
   else
@@ -80,7 +81,7 @@ fi
 # Iterate across each RELS-EXT
 for i in $TMPDIR/rels-ext/*_RELS-EXT.*
 do
-  # We wrote this file with the timestamp of the bag earlier
+  # We wrote this file with the timestamp of the bag earlier; remove the RELS_EXT.ext suffix to find it
   f=`basename $i | sed 's/_RELS-EXT.*$//'`
   # Find the datestamp on the Bag
   EXPORTED=`date --utc -r $TMPDIR/Bag-dates/${f} "+%FT%T.%3NZ"`
@@ -97,7 +98,6 @@ do
       ERRORFLAG=1
     fi 
   fi
-  # TODO: is there a way to capture updates for the children?
 done
 if [[ "$ERRORFLAG" = "" ]]
 then
@@ -111,6 +111,7 @@ then
 else
   >&2 echo 'Datastream CRUD push was not run.'
 fi
+# Only delete the working directory if there were no errors
 if [[ "$ERRORFLAG" = "" ]]
 then
   rm -rf $TMPDIR
