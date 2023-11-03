@@ -1,0 +1,6 @@
+boto3==1.26.27
+botocore==1.29.27
+lxml==4.9.1
+pandas==1.5.2
+pyotp==2.8.0
+Requests==2.31.0
