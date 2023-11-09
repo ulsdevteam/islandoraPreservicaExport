@@ -17,26 +17,30 @@ import boto3
 import botocore
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+
 def fTime():
     query_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return query_time
+
 
 def sanitize_working_area(masterdir, folder_name):
     if os.path.exists(os.path.join(masterdir, folder_name)):
         shutil.rmtree(os.path.join(masterdir, folder_name))
 
+
 def new_token(username, password, basename):
-  headers1 = {'accept': 'application/json'}  # define headers for initial request
-  credentials = {'username': username,
-                 'password': password}  # create credential dictionary. Password has been redacted
-  baseURL = 'https://' + basename  # define base API url and save as variable to limit retyping later
-  auth = requests.post(baseURL + '/api/accesstoken/login', headers=headers1,
-                       data=credentials).json()  # request an API access token
-  print(auth)
-  session = auth['token']  # save token in a variable to be accessed later
-  headers = {'Preservica-Access-Token': session,
-             'Content-Type': 'application/xml'}  # create new headers for all subsequent requests containing token
-  return headers
+    headers1 = {'accept': 'application/json'}  # define headers for initial request
+    credentials = {'username': username,
+                   'password': password}  # create credential dictionary. Password has been redacted
+    baseURL = 'https://' + basename  # define base API url and save as variable to limit retyping later
+    auth = requests.post(baseURL + '/api/accesstoken/login', headers=headers1,
+                         data=credentials).json()  # request an API access token
+    print(auth)
+    session = auth['token']  # save token in a variable to be accessed later
+    headers = {'Preservica-Access-Token': session,
+               'Content-Type': 'application/xml'}  # create new headers for all subsequent requests containing token
+    return headers
+
 
 def fv6Checksum(file_path, sum_type):
     # root_logger.info("fv6Checksum")
@@ -403,6 +407,7 @@ def fCreatePAXFolderOpexFragments(pax_folder, security_tag):
             pass
             # root_logger.warning("fCreateFolderOpexFragments : opex could not be created " + temp_opex_file)
 
+
 def fGet_file_no_ext(full_path):
     no_ext = os.path.splitext(full_path)
     file_no_ext = os.path.basename(no_ext[0])
@@ -412,6 +417,7 @@ def fGet_file_no_ext(full_path):
 def fGet_filesize(full_path):
     fsize = os.path.getsize(full_path)
     return fsize
+
 
 def fQuery_container_folder(qcf_target_folder, bucket_prefix, selection_type):
     root_logger.info("fQuery_container_folder")
@@ -437,7 +443,8 @@ def fQuery_container_folder(qcf_target_folder, bucket_prefix, selection_type):
                 f_size = fGet_filesize(qfull_path)
                 f_no_ext = fGet_file_no_ext(qfull_path)
                 print(f_no_ext)
-                path_no_ext = bucket_prefix + '/' + qroot.replace(qcf_parent_folder, "").lstrip("\\").replace("\\", "/") + '/' + qf #remove '/' after bucket prefix to use on a Mac
+                path_no_ext = bucket_prefix  + qroot.replace(qcf_parent_folder, "").lstrip("\\").replace("\\",
+                                                                                                              "/") + '/' + qf  # remove '/' after bucket prefix to use on a Mac
                 print("path_no_ext " + str(path_no_ext))
                 root_logger.info("path_no_ext " + str(path_no_ext))
                 packages = qf
@@ -453,6 +460,7 @@ def fQuery_container_folder(qcf_target_folder, bucket_prefix, selection_type):
         tlf_count += 1
     return container_to_pass_back
 
+
 def fUpload_file(file_name, f_no_ext, f_name, f_size, object_name):
     root_logger.info("fUpload_file")
     global AWS_Key
@@ -464,11 +472,14 @@ def fUpload_file(file_name, f_no_ext, f_name, f_size, object_name):
     # Upload the file
     s3_client = boto3.client('s3', aws_access_key_id=AWS_Key, aws_secret_access_key=AWS_Secret)
     try:
-        response = s3_client.upload_file(file_name, bucket, object_name, ExtraArgs={"Metadata": {"key": f"{f_no_ext}", "name": f"{f_name}", "size": f"{f_size}"}}, Callback=ProgressPercentage(file_name))
+        response = s3_client.upload_file(file_name, bucket, object_name, ExtraArgs={
+            "Metadata": {"key": f"{f_no_ext}", "name": f"{f_name}", "size": f"{f_size}"}},
+                                         Callback=ProgressPercentage(file_name))
     except botocore.exceptions.ClientError as e:
         root_logger.error(e)
         return False
     return True
+
 
 def fListUploadDirectory():
     c_f_list = []
@@ -500,7 +511,7 @@ def fListUploadDirectory():
         returned_target_folder = fQuery_container_folder(os.path.join(final), bucket_prefix, sel_type)
         for c_f_key, c_f_val in dict_containerf.items():
             c_f_list.append(c_f_val)
-        #if start_inc_ingest_wf == 1:
+        # if start_inc_ingest_wf == 1:
         mThread(c_f_list)
     elif c_f_input == "QUIT":
         sys.exit()
@@ -513,13 +524,14 @@ def fListUploadDirectory():
             returned_target_folder = fQuery_container_folder(os.path.join(final, c_f_val_from_dict), bucket_prefix,
                                                              sel_type)
             print(returned_target_folder)
-#            if c_f_val_from_dict == "NA":
-#                print("You have selected a number that isn't in the list")
-#            else:
-#                if start_inc_ingest_wf == 1:
+        #            if c_f_val_from_dict == "NA":
+        #                print("You have selected a number that isn't in the list")
+        #            else:
+        #                if start_inc_ingest_wf == 1:
         for c_f_input in c_f_input_list:
             c_f_val_from_dict = dict_containerf.get(int(c_f_input), "NA")
             fStart_Workflow(c_f_val_from_dict)
+
 
 def mThread(c_list):
     mthreads = []
@@ -534,6 +546,7 @@ def mThread(c_list):
         for task in as_completed(mthreads):
             task_result = task.result()
     return task_result
+
 
 def fStart_Workflow(fss_container):
     root_logger.info("fStart_Workflow")
@@ -558,11 +571,12 @@ def fStart_Workflow(fss_container):
     b_wf_start_response = bytes(wf_start_response.text, 'utf-8')
     parser = lxml.etree.XMLParser(remove_blank_text=True, ns_clean=True)
     wf_tree = lxml.etree.fromstring(b_wf_start_response, parser)
-    workflow_id = wf_tree.xpath("//xip_wf:WorkflowInstance/xip_wf:Id", namespaces = NSMAP)
+    workflow_id = wf_tree.xpath("//xip_wf:WorkflowInstance/xip_wf:Id", namespaces=NSMAP)
     for wfid in range(len(workflow_id)):
         wf_id = workflow_id[wfid].text
         print("workflow id " + str(wf_id))
         fCheckWorkflowStatus(wf_id)
+
 
 def fCheckWorkflowStatus(fc_wf_id):
     root_logger.info("fCheckWorkflowStatus")
@@ -582,7 +596,7 @@ def fCheckWorkflowStatus(fc_wf_id):
         b_r_wf_start_response = bytes(r_wf_start_response.text, 'utf-8')
         parser = lxml.etree.XMLParser(remove_blank_text=True, ns_clean=True)
         r_wf_tree = lxml.etree.fromstring(b_r_wf_start_response, parser)
-        r_workflow_state = r_wf_tree.xpath("//xip_wf:WorkflowInstance/xip_wf:State", namespaces = NSMAP)
+        r_workflow_state = r_wf_tree.xpath("//xip_wf:WorkflowInstance/xip_wf:State", namespaces=NSMAP)
         for r_wfstate in range(len(r_workflow_state)):
             r_wf_state = r_workflow_state[r_wfstate].text
             print("workflow state " + str(r_wf_state))
@@ -591,12 +605,12 @@ def fCheckWorkflowStatus(fc_wf_id):
             break
         wf_loop_count += 1
 
+
 # define ini file
 config_input = "pitt.ini"
 config = configparser.ConfigParser()
 config.sections()
 config.read(config_input)
-
 
 container_list = []
 c_list_folders_in_dir = []
@@ -638,14 +652,15 @@ logs = Path(masterDir_path) / 'Logs'
 
 ###Logging
 LogFile = os.path.join(logs, "Log_" + str(fTime()) + ".log")
-root_logger = logging.getLogger() #logging object created
+root_logger = logging.getLogger()  # logging object created
 root_logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(LogFile, 'w', 'utf-8')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
 root_logger.addHandler(handler)
 root_logger.info("log file for " + str(os.path.basename(__file__)))
 
-first_step = input('Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers :: ')
+first_step = input(
+    'Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers :: ')
 
 if first_step == '1':
     sanitize_working_area(masterDir_path, 'Working')
@@ -664,7 +679,7 @@ if first_step == '1':
     for root, dirs, files in os.walk(source):
         for file in files:
             if file.startswith('RELS-EXT') and os.path.join(root, file).split(os.sep)[-2] == 'data':
-                parent_folders = os.path.join(root, file).replace('\RELS-EXT.rdf', '')
+                parent_folders = os.path.join(root, file).replace(str(os.sep) + 'RELS-EXT.rdf', '')
                 # print(os.path.join(root, file))
 
                 collection_folder = parent_folders.split(os.sep)
@@ -681,14 +696,16 @@ if first_step == '1':
                 if islandora_model == 'info:fedora/islandora:compoundCModel':
                     asset_parent = parent_folders.split(os.sep)[-2]
                     # do something for compound objects
-                    for r, ds, fs in os.walk(parent_folders.replace('\data', '')):
+                    for r, ds, fs in os.walk(parent_folders.replace(str(os.sep) + 'data', '')):
                         for f in fs:
-                            if f.startswith('MODS') and os.path.join(r, f).split(os.sep)[-2] == 'data' and 'us_ppiu' not in \
+                            if f.startswith('MODS') and os.path.join(r, f).split(os.sep)[
+                                -2] == 'data' and 'us_ppiu' not in \
                                     root.split(os.sep)[-2].lower():
                                 pass
                                 mods_fp = os.path.join(r, f)
                                 xmlObject = ET.parse(
-                                    os.path.join(r, f))  # create an xml object that python can parse using lxml libraries
+                                    os.path.join(r,
+                                                 f))  # create an xml object that python can parse using lxml libraries
                                 root_element = xmlObject.getroot()
                                 nsmap = root_element.nsmap
                                 # print(ET.tostring(root, pretty_print=True).decode())
@@ -696,7 +713,8 @@ if first_step == '1':
                                                      nsmap) is not None:  # testing for mods:relatedItem/mods:Identifier. This will determine the folder heirarchy
                                     relatedID = root_element.find('.//mods:relatedItem/mods:identifier', nsmap).text
                                     directory_list = [
-                                        relatedID + ' ' + note.attrib['type'] + ' ' + note.text.split(' ')[0].rstrip('.')
+                                        relatedID + ' ' + note.attrib['type'] + ' ' + note.text.split(' ')[0].rstrip(
+                                            '.')
                                         for note in root_element.findall('.//mods:relatedItem/mods:note', nsmap) if
                                         note.attrib['type'] == 'series' or note.attrib['type'] == 'subseries' or
                                         note.attrib['type'] == 'otherlevel']
@@ -708,14 +726,17 @@ if first_step == '1':
                                             print(child_dir)
                                             asset_folder = child_dir.replace('.', '_') + '.pax'
                                             os.makedirs(
-                                                os.path.join(working, collection, os.sep.join(directory_list), asset_folder,
-                                                             'Representation_Preservation_1', child_dir.replace('.', '_')),
+                                                os.path.join(working, collection, os.sep.join(directory_list),
+                                                             asset_folder,
+                                                             'Representation_Preservation_1',
+                                                             child_dir.replace('.', '_')),
                                                 exist_ok=True)
                                             for child_f in os.listdir(os.path.join(parent_folders, child_dir)):
                                                 if child_f.startswith('OBJ'):
                                                     shutil.copy(os.path.join(parent_folders, child_dir, child_f),
                                                                 os.path.join(working, collection, directory_list,
-                                                                             asset_folder, 'Representation_Preservation_1',
+                                                                             asset_folder,
+                                                                             'Representation_Preservation_1',
                                                                              child_dir.replace('.', '_'),
                                                                              child_dir.replace('.', '_') + '.' +
                                                                              child_f.split('.')[-1]))
@@ -738,7 +759,8 @@ if first_step == '1':
                                                     shutil.copy(os.path.join(parent_folders, child_dir, child_f),
                                                                 os.path.join(working, collection,
                                                                              directory_list,
-                                                                             child_dir.replace('.', '_') + '_TECHMD.xml'))
+                                                                             child_dir.replace('.',
+                                                                                               '_') + '_TECHMD.xml'))
                                     shutil.copy(mods_fp, os.path.join(working, collection, os.sep.join(directory_list),
                                                                       asset_parent.replace('Bag-', '').replace('.',
                                                                                                                '_') + '_mods' + '.xml'))  # moving folder level metadata to working
@@ -750,14 +772,16 @@ if first_step == '1':
                                         if os.path.isdir(os.path.join(parent_folders, child_dir)):
                                             # print(child_dir)
                                             asset_folder = child_dir.replace('.', '_') + '.pax'
-                                            os.makedirs(os.path.join(working, collection, asset_parent.replace('Bag-', ''),
-                                                                     asset_folder, 'Representation_Preservation_1',
-                                                                     child_dir.replace('.', '_')), exist_ok=True)
+                                            os.makedirs(
+                                                os.path.join(working, collection, asset_parent.replace('Bag-', ''),
+                                                             asset_folder, 'Representation_Preservation_1',
+                                                             child_dir.replace('.', '_')), exist_ok=True)
                                             for child_f in os.listdir(os.path.join(parent_folders, child_dir)):
                                                 if child_f.startswith('OBJ'):
                                                     shutil.copy(os.path.join(parent_folders, child_dir, child_f),
                                                                 os.path.join(working, collection,
-                                                                             asset_parent.replace('Bag-', ''), asset_folder,
+                                                                             asset_parent.replace('Bag-', ''),
+                                                                             asset_folder,
                                                                              'Representation_Preservation_1',
                                                                              child_dir.replace('.', '_'),
                                                                              child_dir.replace('.', '_') + '.' +
@@ -781,20 +805,24 @@ if first_step == '1':
                                                     shutil.copy(os.path.join(parent_folders, child_dir, child_f),
                                                                 os.path.join(working, collection,
                                                                              asset_parent.replace('Bag-', ''),
-                                                                             child_dir.replace('.', '_') + '_TECHMD.xml'))
-                                    shutil.copy(mods_fp, os.path.join(working, collection, asset_parent.replace('Bag-', ''),
-                                                                      asset_parent.replace('Bag-', '') + '_mods' + '.xml'))
+                                                                             child_dir.replace('.',
+                                                                                               '_') + '_TECHMD.xml'))
+                                    shutil.copy(mods_fp,
+                                                os.path.join(working, collection, asset_parent.replace('Bag-', ''),
+                                                             asset_parent.replace('Bag-', '') + '_mods' + '.xml'))
 
 
                 else:
-                    for r, ds, fs in os.walk(parent_folders.replace('\data', '')):
+                    for r, ds, fs in os.walk(parent_folders.replace(str(os.sep) + 'data', '')):
                         for f in fs:
-                            if f.startswith('MODS') and os.path.join(r, f).split(os.sep)[-2] == 'data' and 'us_ppiu' not in \
+                            if f.startswith('MODS') and os.path.join(r, f).split(os.sep)[
+                                -2] == 'data' and 'us_ppiu' not in \
                                     r.split(os.sep)[-2].lower():
                                 mods_fp = os.path.join(r, f)
                                 # print(mods_fp)
                                 xmlObject = ET.parse(
-                                    os.path.join(r, f))  # create an xml object that python can parse using lxml libraries
+                                    os.path.join(r,
+                                                 f))  # create an xml object that python can parse using lxml libraries
                                 root_element = xmlObject.getroot()
                                 nsmap = root_element.nsmap
                                 # print(ET.tostring(root_element, pretty_print=True).decode())
@@ -802,7 +830,8 @@ if first_step == '1':
                                                      nsmap) is not None:  # testing for mods:relatedItem/mods:Identifier. This will determine the folder heirarchy
                                     relatedID = root_element.find('.//mods:relatedItem/mods:identifier', nsmap).text
                                     directory_list = [
-                                        relatedID + ' ' + note.attrib['type'] + ' ' + note.text.split(' ')[0].rstrip('.')
+                                        relatedID + ' ' + note.attrib['type'] + ' ' + note.text.split(' ')[0].rstrip(
+                                            '.')
                                         for note
                                         in root_element.findall('.//mods:relatedItem/mods:note', nsmap) if
                                         note.attrib['type'] == 'series' or note.attrib['type'] == 'subseries' or
@@ -814,16 +843,20 @@ if first_step == '1':
                                     for top, middle, bottom in os.walk(parent_folders):
                                         for b in bottom:
                                             if b.startswith('OBJ'):
-                                                os.makedirs(os.path.join(working, collection, os.sep.join(directory_list),
-                                                                         asset_folder, 'Representation_Preservation_1',
-                                                                         top.split(os.sep)[-1].replace('.', '_').replace(
-                                                                             'Bag-', '')), exist_ok=True)
+                                                os.makedirs(
+                                                    os.path.join(working, collection, os.sep.join(directory_list),
+                                                                 asset_folder, 'Representation_Preservation_1',
+                                                                 top.split(os.sep)[-1].replace('.', '_').replace(
+                                                                     'Bag-', '')), exist_ok=True)
                                                 shutil.copy(os.path.join(top, b),
-                                                            os.path.join(working, collection, os.sep.join(directory_list),
+                                                            os.path.join(working, collection,
+                                                                         os.sep.join(directory_list),
                                                                          asset_folder, 'Representation_Preservation_1',
-                                                                         top.split(os.sep)[-1].replace('.', '_').replace(
+                                                                         top.split(os.sep)[-1].replace('.',
+                                                                                                       '_').replace(
                                                                              'Bag-', ''),
-                                                                         top.split(os.sep)[-1].replace('.', '_').replace(
+                                                                         top.split(os.sep)[-1].replace('.',
+                                                                                                       '_').replace(
                                                                              'Bag-', '') + '.' + b.split('.')[-1]))
                                     shutil.copy(mods_fp, os.path.join(working, collection, os.sep.join(directory_list),
                                                                       r.split('Bag-')[-1].split(os.sep)[0].replace('.',
@@ -857,14 +890,17 @@ if first_step == '1':
                                             if b.startswith('OBJ'):
                                                 os.makedirs(os.path.join(working, collection, asset_folder,
                                                                          'Representation_Preservation_1',
-                                                                         top.split(os.sep)[-2].replace('.', '_').replace(
+                                                                         top.split(os.sep)[-2].replace('.',
+                                                                                                       '_').replace(
                                                                              'Bag-', '')), exist_ok=True)
                                                 shutil.copy(os.path.join(top, b),
                                                             os.path.join(working, collection, asset_folder,
                                                                          'Representation_Preservation_1',
-                                                                         top.split(os.sep)[-2].replace('.', '_').replace(
+                                                                         top.split(os.sep)[-2].replace('.',
+                                                                                                       '_').replace(
                                                                              'Bag-', ''),
-                                                                         top.split(os.sep)[-2].replace('.', '_').replace(
+                                                                         top.split(os.sep)[-2].replace('.',
+                                                                                                       '_').replace(
                                                                              'Bag-', '') + '.' + b.split('.')[-1]))
                                     shutil.copy(mods_fp, os.path.join(working, collection,
                                                                       r.split('Bag-')[-1].split(os.sep)[0].replace('.',
@@ -882,13 +918,16 @@ if first_step == '1':
                                     if os.path.exists(os.path.join(r, 'METS.XML')):
                                         shutil.copy(os.path.join(r, 'METS.XML'), os.path.join(working, collection,
                                                                                               r.split('Bag-')[-1].split(
-                                                                                                  os.sep)[0].replace('.',
-                                                                                                                     '_') + '_METS' + '.xml'))
+                                                                                                  os.sep)[0].replace(
+                                                                                                  '.',
+                                                                                                  '_') + '_METS' + '.xml'))
                                     if os.path.exists(os.path.join(r, 'TECHMD.XML')):
                                         shutil.copy(os.path.join(r, 'TECHMD.XML'), os.path.join(working, collection,
-                                                                                                r.split('Bag-')[-1].split(
-                                                                                                    os.sep)[0].replace('.',
-                                                                                                                       '_') + '_TECHMD' + '.xml'))
+                                                                                                r.split('Bag-')[
+                                                                                                    -1].split(
+                                                                                                    os.sep)[0].replace(
+                                                                                                    '.',
+                                                                                                    '_') + '_TECHMD' + '.xml'))
             if file.startswith('DC') and root.split(os.sep)[-1].startswith('collection'):
                 os.makedirs(os.path.join(working, root.split(os.sep)[-1]), exist_ok=True)
                 shutil.copy(os.path.join(root, file),
@@ -905,9 +944,9 @@ if first_step == '1':
                 fCreatePAXFolderOpexFragments(pax_dir_fp, security_tag='open')
     #
     for root, dirs, files in os.walk(working):
-        print(root)
-        print(re.split(r'(\\\w+.pax)|(\\pitt\S+.pax)', root)[0])
-        folders.append(re.split(r'(\\\w+.pax)|(\\pitt\S+.pax)', root)[0])
+        #print(root)
+        #print(re.split(r'(\/\w+.pax)|(\\pitt\S+.pax)', root)[0])
+        folders.append(re.split(r'(\/\w+.pax)|(\/pitt\S+.pax)', root)[0])
 
     folders_deduped = list(set(folders))
 
@@ -964,8 +1003,9 @@ if first_step == '1':
                 root_logger.info("fCreateContainerFolderOpexFragment : file created " + c_temp_opex_file)
             except:
                 pass
-                root_logger.warning("fCreateContainerFolderOpexFragment : opex could not be created " + c_temp_opex_file)
-        
+                root_logger.warning(
+                    "fCreateContainerFolderOpexFragment : opex could not be created " + c_temp_opex_file)
+
     # send files to S3 bucket
     send_to_s3 = input(
         '\nPAXs created and ready for upload. To send data to s3 bucket and begin Preservica ingest enter 1. To stop the process and review packaged content on local device enter 0: ')
