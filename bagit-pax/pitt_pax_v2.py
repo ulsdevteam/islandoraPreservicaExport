@@ -858,26 +858,29 @@ if first_step == '1':
                                                                          top.split(os.sep)[-1].replace('.',
                                                                                                        '_').replace(
                                                                              'Bag-', '') + '.' + b.split('.')[-1]))
+
                                     shutil.copy(mods_fp, os.path.join(working, collection, os.sep.join(directory_list),
                                                                       r.split('Bag-')[-1].split(os.sep)[0].replace('.',
                                                                                                                    '_') + '_mods' + '.xml'))
-                                    try:
-                                        shutil.copy(os.path.join(r, 'DC.XML'),
-                                                    os.path.join(working, collection, os.sep.join(directory_list),
-                                                                 r.split('Bag-')[-1].split(os.sep)[0].replace('.',
-                                                                                                              '_') + '_dc' + '.xml'))
-                                    except FileNotFoundError:
-                                        shutil.copy(os.path.join(r, 'DC.bin'),
-                                                    os.path.join(working, collection, os.sep.join(directory_list),
-                                                                 r.split('Bag-')[-1].split(os.sep)[0].replace('.',
-                                                                                                              '_') + '_dc' + '.xml'))
-                                    if os.path.exists(os.path.join(r, 'METS.XML')):
-                                        shutil.copy(os.path.join(r, 'METS.XML'),
+                                    for a in os.listdir(r):
+                                        print(a)
+                                        x = re.findall(r'DC.\w+', os.path.join(r, a))
+                                        if x:
+                                            shutil.copy(os.path.join(r, a), os.path.join(working, collection,
+                                                                                                r.split('Bag-')[-1].split(
+                                                                                                    os.sep)[0].replace('.',
+                                                                                                                       '_') + '_dc' + '.xml'))
+                                    for b in os.listdir(r):
+                                        x = re.findall(r'METS.\w+', os.path.join(r, b))
+                                        if x:
+                                            shutil.copy(os.path.join(r, b),
                                                     os.path.join(working, collection, os.sep.join(directory_list),
                                                                  r.split('Bag-')[-1].split(os.sep)[0].replace('.',
                                                                                                               '_') + '_METS' + '.xml'))
-                                    if os.path.exists(os.path.join(r, 'TECHMD.XML')):
-                                        shutil.copy(os.path.join(r, 'TECHMD.XML'),
+                                    for c in os.listdir(r):
+                                        x = re.findall(r'TECHMD.\w+', os.path.join(r, c))
+                                        if x:
+                                            shutil.copy(os.path.join(r, c),
                                                     os.path.join(working, collection, os.sep.join(directory_list),
                                                                  r.split('Bag-')[-1].split(os.sep)[0].replace('.',
                                                                                                               '_') + '_TECHMD' + '.xml'))
@@ -905,29 +908,28 @@ if first_step == '1':
                                     shutil.copy(mods_fp, os.path.join(working, collection,
                                                                       r.split('Bag-')[-1].split(os.sep)[0].replace('.',
                                                                                                                    '_') + '_mods' + '.xml'))
-                                    try:
-                                        shutil.copy(os.path.join(r, 'DC.XML'), os.path.join(working, collection,
-                                                                                            r.split('Bag-')[-1].split(
-                                                                                                os.sep)[0].replace('.',
-                                                                                                                   '_') + '_dc' + '.xml'))
-                                    except FileNotFoundError:
-                                        shutil.copy(os.path.join(r, 'DC.bin'), os.path.join(working, collection,
-                                                                                            r.split('Bag-')[-1].split(
-                                                                                                os.sep)[0].replace('.',
-                                                                                                                   '_') + '_dc' + '.xml'))
-                                    if os.path.exists(os.path.join(r, 'METS.XML')):
-                                        shutil.copy(os.path.join(r, 'METS.XML'), os.path.join(working, collection,
-                                                                                              r.split('Bag-')[-1].split(
-                                                                                                  os.sep)[0].replace(
-                                                                                                  '.',
-                                                                                                  '_') + '_METS' + '.xml'))
-                                    if os.path.exists(os.path.join(r, 'TECHMD.XML')):
-                                        shutil.copy(os.path.join(r, 'TECHMD.XML'), os.path.join(working, collection,
-                                                                                                r.split('Bag-')[
-                                                                                                    -1].split(
-                                                                                                    os.sep)[0].replace(
-                                                                                                    '.',
-                                                                                                    '_') + '_TECHMD' + '.xml'))
+                                    for a in os.listdir(r):
+                                        print(a)
+                                        x = re.findall(r'DC.\w+', os.path.join(r, a))
+                                        if x:
+                                            shutil.copy(os.path.join(r, a), os.path.join(working, collection,
+                                                                                                r.split('Bag-')[-1].split(
+                                                                                                    os.sep)[0].replace('.',
+                                                                                                                       '_') + '_dc' + '.xml'))
+                                    for b in os.listdir(r):
+                                        x = re.findall(r'METS.\w+', os.path.join(r, b))
+                                        if x:
+                                            shutil.copy(os.path.join(r, b),
+                                                    os.path.join(working, collection, os.sep.join(directory_list),
+                                                                 r.split('Bag-')[-1].split(os.sep)[0].replace('.',
+                                                                                                              '_') + '_METS' + '.xml'))
+                                    for c in os.listdir(r):
+                                        x = re.findall(r'TECHMD.\w+', os.path.join(r, c))
+                                        if x:
+                                            shutil.copy(os.path.join(r, c),
+                                                    os.path.join(working, collection, os.sep.join(directory_list),
+                                                                 r.split('Bag-')[-1].split(os.sep)[0].replace('.',
+                                                                                                              '_') + '_TECHMD' + '.xml'))
             if file.startswith('DC') and root.split(os.sep)[-1].startswith('collection'):
                 os.makedirs(os.path.join(working, root.split(os.sep)[-1]), exist_ok=True)
                 shutil.copy(os.path.join(root, file),
