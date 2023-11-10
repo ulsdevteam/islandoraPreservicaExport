@@ -17,6 +17,28 @@ import boto3
 import botocore
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+class ProgressPercentage(object):
+  global prog_val
+
+  def __init__(self, filename):
+    self._filename = filename
+    self._size = float(os.path.getsize(filename))
+    self._seen_so_far = 0
+    self._lock = threading.Lock()
+
+  def __call__(self, bytes_amount):
+    with self._lock:
+      self._seen_so_far += bytes_amount
+      percentage = (self._seen_so_far / self._size) * 100
+      sys.stdout.write(
+        "\r%s  %s / %s  (%.2f%%)" % (
+          self._filename, self._seen_so_far, self._size,
+          percentage))
+      sys.stdout.write("\n" + "\n")
+      sys.stdout.flush()
+
+      prog_val = "\r%s  %s / %s  (%.2f%%)" % (self._filename, self._seen_so_far, self._size, percentage)
+        
 
 def fTime():
     query_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -493,11 +515,11 @@ def fListUploadDirectory():
             else:
                 pass
     for containerf in os.listdir(final):
-        if "ds_store" in containerf.lower():
-            pass
-        else:
+        if containerf.lower().startswith('container'):
             dict_containerf[cf_counter] = containerf
             cf_counter += 1
+        else:
+            pass
     print("****************************************")
 
     for c_f_key, c_f_val in dict_containerf.items():
