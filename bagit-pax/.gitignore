@@ -1,1 +1,7 @@
 pitt.ini
+Logs/*
+!Logs/.gitkeep
+Working/*
+!Working/.gitkeep
+Final/*
+!Final/.gitkeep

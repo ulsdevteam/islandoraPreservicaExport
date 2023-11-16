@@ -459,7 +459,7 @@ def fQuery_container_folder(qcf_target_folder, bucket_prefix, selection_type):
             container_to_pass_back = os.path.basename(qroot)
         for qf in qf_names:
             response = False
-            if os.path.isfile(os.path.join(qroot, qf)):
+            if os.path.isfile(os.path.join(qroot, qf)) and not qf.endswith('.gitkeep') :
                 qfull_path = os.path.join(qroot, qf)
                 print("qfull_path " + str(qfull_path))
                 f_size = fGet_filesize(qfull_path)
