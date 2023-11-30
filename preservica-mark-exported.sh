@@ -102,7 +102,7 @@ done
 if [[ "$ERRORFLAG" = "" ]]
 then
   # Push the updated RELS-EXT datastreams via Datastream CRUD
-  drush -qy --root=/var/www/html/drupal7/ --user=$USER --uri=http://gamera.library.pitt.edu islandora_datastream_crud_push_datastreams --datastreams_mimetype='application/rdf+xml' --datastreams_source_directory=$TMPDIR/rels-ext
+  drush -qy --root=/var/www/html/drupal7/ --user=$USER --uri=http://gamera.library.pitt.edu islandora_datastream_crud_push_datastreams --datastreams_mimetype='application/rdf+xml' --datastreams_source_directory=$TMPDIR/rels-ext --no_derivs
   if [[ $? -ne 0 ]]
   then
     >&2 echo "CRUD push returned an error"
