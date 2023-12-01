@@ -1,6 +1,9 @@
 #!/bin/bash
 # Where are the Bags which were exported to Preservica?
-BAGDIR=/bagit/bags
+if [ "$BAGDIR" == "" ]
+then
+  BAGDIR=/bagit/bags
+fi
 # Where can we setup a temporary working directory?
 TMPDIR=`mktemp -d`
 # Have we seen any errors which require operator intervention?
@@ -117,4 +120,5 @@ then
   rm -rf $TMPDIR
 else
   >&2 echo "Examine $TMPDIR for errors"
+  exit 2
 fi
