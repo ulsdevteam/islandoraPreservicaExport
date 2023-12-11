@@ -57,7 +57,7 @@ def new_token(username, password, basename):
     baseURL = 'https://' + basename  # define base API url and save as variable to limit retyping later
     auth = requests.post(baseURL + '/api/accesstoken/login', headers=headers1,
                          data=credentials).json()  # request an API access token
-    print(auth)
+    root_logger.info(auth)
     session = auth['token']  # save token in a variable to be accessed later
     headers = {'Preservica-Access-Token': session,
                'Content-Type': 'application/xml'}  # create new headers for all subsequent requests containing token
@@ -65,7 +65,7 @@ def new_token(username, password, basename):
 
 
 def fv6Checksum(file_path, sum_type):
-    # root_logger.info("fv6Checksum")
+    root_logger.debug("fv6Checksum")
     sum_type = sum_type.replace("-", "")
     if sum_type.lower() == "md5":
         with open(file_path, "rb") as f:
@@ -74,8 +74,8 @@ def fv6Checksum(file_path, sum_type):
             while chunk:
                 file_hash.update(chunk)
                 chunk = f.read(8192)
-        # root_logger.info("fv6Checksum : file_path " + str(file_path))
-        # root_logger.info("fv6Checksum : hash " + file_hash.hexdigest())
+        root_logger.debug("fv6Checksum : file_path " + str(file_path))
+        root_logger.debug("fv6Checksum : hash " + file_hash.hexdigest())
         return file_hash.hexdigest()
     elif sum_type.lower() == "sha1":
         with open(file_path, "rb") as f:
@@ -84,8 +84,8 @@ def fv6Checksum(file_path, sum_type):
             while chunk:
                 file_hash.update(chunk)
                 chunk = f.read(8192)
-        # root_logger.info("fv6Checksum : file_path " + str(file_path))
-        # root_logger.info("fv6Checksum : hash " + file_hash.hexdigest())
+        root_logger.debug("fv6Checksum : file_path " + str(file_path))
+        root_logger.debug("fv6Checksum : hash " + file_hash.hexdigest())
         return file_hash.hexdigest()
     elif sum_type.lower() == "sha256":
         with open(file_path, "rb") as f:
@@ -94,8 +94,8 @@ def fv6Checksum(file_path, sum_type):
             while chunk:
                 file_hash.update(chunk)
                 chunk = f.read(8192)
-        # root_logger.info("fv6Checksum : file_path " + str(file_path))
-        # root_logger.info("fv6Checksum : hash " + file_hash.hexdigest())
+        root_logger.debug("fv6Checksum : file_path " + str(file_path))
+        root_logger.debug("fv6Checksum : hash " + file_hash.hexdigest())
         return file_hash.hexdigest()
     elif sum_type.lower() == "sha512":
         with open(file_path, "rb") as f:
@@ -104,8 +104,8 @@ def fv6Checksum(file_path, sum_type):
             while chunk:
                 file_hash.update(chunk)
                 chunk = f.read(8192)
-        # root_logger.info("fv6Checksum : file_path " + str(file_path))
-        # root_logger.info("fv6Checksum : hash " + file_hash.hexdigest())
+        root_logger.debug("fv6Checksum : file_path " + str(file_path))
+        root_logger.debug("fv6Checksum : hash " + file_hash.hexdigest())
         return file_hash.hexdigest()
 
 
@@ -113,7 +113,7 @@ def fCreateOpexFragment(list_folders_in_dir, list_files_in_dir, LegacyXIP,
                         Identifiers_biblio, Identifiers_catalog, source_ID, security_tag, ref_fldr_title, ref_fldr_desc,
                         opex_desc_metadata, file_checksum_dict):
     sub_r = "fCreateOpexFragment"
-    # root_logger.info(sub_r)
+    root_logger.debug(sub_r)
 
     ## Opex metadata structure
     OPEX_namespaces = 'http://www.openpreservationexchange.org/opex/v1.2'  # define your namespace
@@ -153,7 +153,7 @@ def fCreateOpexFragment(list_folders_in_dir, list_files_in_dir, LegacyXIP,
             for lfd in range(len(list_folders_in_dir)):
                 opex_folder = ET.SubElement(opex_folders, opex + 'Folder')
                 opex_folder.text = list_folders_in_dir[lfd]
-                # root_logger.info("fCreateFolderOpexFragments 4 : opex_data_folder " + opex_folder.text)
+                root_logger.debug("fCreateFolderOpexFragments 4 : opex_data_folder " + opex_folder.text)
         if list_files_in_dir != []:
             opex_files = ET.SubElement(opex_manifest_element, opex + 'Files')
             for lff in range(len(list_files_in_dir)):
@@ -163,7 +163,7 @@ def fCreateOpexFragment(list_folders_in_dir, list_files_in_dir, LegacyXIP,
                 else:
                     opex_file = ET.SubElement(opex_files, opex + 'File', {'type': 'content'})
                     opex_file.text = list_files_in_dir[lff]
-            # root_logger.info("fCreateFolderOpexFragments 5 : opex_data_file " + opex_file.text)
+            root_logger.debug("fCreateFolderOpexFragments 5 : opex_data_file " + opex_file.text)
 
     # Opex Properties
     opex_properties = ET.SubElement(opex_root, opex + 'Properties')
@@ -209,9 +209,9 @@ def fCreateOpexFragment(list_folders_in_dir, list_files_in_dir, LegacyXIP,
                 opex_descrip_meta_desc = desc_metadata.append(opex_desc_metadata)
 
     opex_master = ET.tostring(opex_root).decode('utf-8')
-    print(ref_fldr_title)
-    print(opex_master)
-    # root_logger.info("fCreateOpexFragment : opex master " + str(opex_master))
+    root_logger.info(ref_fldr_title)
+    root_logger.info(opex_master)
+    root_logger.debug("fCreateOpexFragment : opex master " + str(opex_master))
     parser = ET.XMLParser(remove_blank_text=True)
     opex_xml = ET.fromstring(opex_master, parser=parser)
     new_opex_xml = ET.tostring(opex_xml, encoding="unicode", pretty_print=True)
@@ -233,7 +233,7 @@ def fCreateFolderOpexFragments(folder_path, security_tag):
 
     opex_fol = folder_path
     parent_dir = opex_fol.split(os.sep)[0:len(opex_fol.split(os.sep)) - 1][-1]
-    print(parent_dir)
+    root_logger.info(parent_dir)
     if os.path.isdir(opex_fol):
         LegacyXIP = ""
         Identifiers_catalog = ""
@@ -271,7 +271,7 @@ def fCreateFolderOpexFragments(folder_path, security_tag):
                 list_folders_in_dir.append(child)
             if os.path.isfile(os.path.join(opex_fol, child)):
                 list_files_in_dir.append(child)
-        print('list of files: ', list_files_in_dir)
+        root_logger.info('list of files: ' + str(list_files_in_dir))
         xml_package = ""
 
         xml_package = fCreateOpexFragment(list_folders_in_dir, list_files_in_dir, LegacyXIP, Identifiers_biblio,
@@ -282,7 +282,7 @@ def fCreateFolderOpexFragments(folder_path, security_tag):
             opex_temp.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" + "\n")
             opex_temp.write(xml_package)
             opex_temp.close()
-            # root_logger.info("fCreateFolderOpexFragments 6 : file created " + temp_opex_file)
+            root_logger.debug("fCreateFolderOpexFragments 6 : file created " + temp_opex_file)
         except:
             pass
             # root_logger.warning("fCreateFolderOpexFragments : opex could not be created " + temp_opex_file)
@@ -290,7 +290,7 @@ def fCreateFolderOpexFragments(folder_path, security_tag):
 
 def fGetDescriptiveMetadata(fp):
     if os.path.exists(fp):
-        print(fp)
+        root_logger.info(fp)
         xmlObject = ET.parse(fp)
         metadata_root = xmlObject.getroot()
         return metadata_root
@@ -310,7 +310,7 @@ def fCreateFileOpexFragments(file, parent, xip_desc, security_tag):
     Identifiers_biblio = ""
     pax_type = ""
     file_noext = os.path.splitext(os.path.basename(file))[0]
-    print("file_noext " + str(file_noext))
+    root_logger.info("file_noext " + str(file_noext))
     Identifiers_biblio = ""
     list_folders_in_dir = ''
     list_files_in_dir = ''
@@ -337,7 +337,7 @@ def fCreateFileOpexFragments(file, parent, xip_desc, security_tag):
             opex_file.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" + "\n")
             opex_file.write(file_xml_package)
             opex_file.close()
-            # root_logger.info("fCreateFileOpexFragments : file created " + opex_filepath)
+            root_logger.debug("fCreateFileOpexFragments : file created " + opex_filepath)
         except:
             pass
             # root_logger.warning("fCreateFileOpexFragments : opex could not be created " + opex_filepath)
@@ -358,7 +358,7 @@ def fCreatePAXFolderOpexFragments(pax_folder, security_tag):
 
     dc_metadata = os.path.join(pax_folder.split(pax_folder.split(os.sep)[-1])[0],
                                pax_folder.split(os.sep)[-1].replace('.pax', '') + '_dc.xml')
-    print(dc_metadata)
+    root_logger.info(dc_metadata)
     mods_metadata = os.path.join(pax_folder.split(pax_folder.split(os.sep)[-1])[0],
                                  pax_folder.split(os.sep)[-1].replace('.pax', '') + '_mods.xml')
     mets_metadata = os.path.join(pax_folder.split(pax_folder.split(os.sep)[-1])[0],
@@ -385,7 +385,7 @@ def fCreatePAXFolderOpexFragments(pax_folder, security_tag):
             for root, dirs, files in os.walk(os.path.join(pax_dir, dir)):
                 for file in files:
                     list_files_in_dir.append(dir + '/' + file.split('.')[0] + '/' + file)
-                    print(list_files_in_dir)
+                    root_logger.info(list_files_in_dir)
                     try:
                         file_checksum_dict[dir + '/' + file.split('.')[0] + '/' + file] = fv6Checksum(
                             pax_dir + os.sep + dir + os.sep + file.split('.')[0] + os.sep + file, 'sha1')
@@ -393,7 +393,7 @@ def fCreatePAXFolderOpexFragments(pax_folder, security_tag):
                         file_checksum_dict[dir + '/' + file.split('.')[0] + '/' + file] = fv6Checksum(
                             pax_dir + os.sep + dir + os.sep + file.split('.')[0] + '.' + file.split('.')[
                                 1] + os.sep + file, 'sha1')
-        print(file_checksum_dict)
+        root_logger.info(file_checksum_dict)
 
         DC_NSMAP = fGetDescriptiveMetadata(dc_metadata).nsmap
 
@@ -424,7 +424,7 @@ def fCreatePAXFolderOpexFragments(pax_folder, security_tag):
             opex_temp.write("<?xml version=\"1.1\" encoding=\"UTF-8\" standalone=\"yes\"?>" + "\n")
             opex_temp.write(xml_package)
             opex_temp.close()
-            # root_logger.info("fCreateFolderOpexFragments 6 : file created " + temp_opex_file)
+            root_logger.debug("fCreateFolderOpexFragments 6 : file created " + temp_opex_file)
         except:
             pass
             # root_logger.warning("fCreateFolderOpexFragments : opex could not be created " + temp_opex_file)
@@ -461,19 +461,19 @@ def fQuery_container_folder(qcf_target_folder, bucket_prefix, selection_type):
             response = False
             if os.path.isfile(os.path.join(qroot, qf)) and not qf.endswith('.gitkeep') :
                 qfull_path = os.path.join(qroot, qf)
-                print("qfull_path " + str(qfull_path))
+                root_logger.info("qfull_path " + str(qfull_path))
                 f_size = fGet_filesize(qfull_path)
                 f_no_ext = fGet_file_no_ext(qfull_path)
-                print(f_no_ext)
+                root_logger.info(f_no_ext)
                 path_no_ext = bucket_prefix  + qroot.replace(qcf_parent_folder, "").lstrip("\\").replace("\\",
                                                                                                               "/") + '/' + qf  # remove '/' after bucket prefix to use on a Mac
-                print("path_no_ext " + str(path_no_ext))
+                root_logger.info("path_no_ext " + str(path_no_ext))
                 root_logger.info("path_no_ext " + str(path_no_ext))
                 packages = qf
                 if Cloud_vendor_target == "AWS":
                     response = fUpload_file(qfull_path, f_no_ext, packages, f_size, path_no_ext)
                 else:
-                    print("NO CLOUD VENDOR PROVIDED IN .INI FILE")
+                    root_logger.error("NO CLOUD VENDOR PROVIDED IN .INI FILE")
                 if response == True:
                     # fDelete_Content(qfull_path)
                     pass
@@ -541,11 +541,11 @@ def fListUploadDirectory():
         c_f_input_list = c_f_input.split(',')
         for c_f_input in c_f_input_list:
             c_f_val_from_dict = dict_containerf.get(int(c_f_input), "NA")
-            print(os.path.join(final, c_f_val_from_dict))
+            root_logger.info(os.path.join(final, c_f_val_from_dict))
             sel_type = "ind"
             returned_target_folder = fQuery_container_folder(os.path.join(final, c_f_val_from_dict), bucket_prefix,
                                                              sel_type)
-            print(returned_target_folder)
+            root_logger.info(returned_target_folder)
         #            if c_f_val_from_dict == "NA":
         #                print("You have selected a number that isn't in the list")
         #            else:
@@ -562,9 +562,9 @@ def mThread(c_list):
     task_result = ""
     with ThreadPoolExecutor(max_workers=max_worker_count) as executor:
         for c_next in c_list:
-            print(c_next)
+            root_logger.info(c_next)
             mthreads.append(executor.submit(fStart_Workflow, c_next))
-            print("mthreads " + str(mthreads))
+            root_logger.info("mthreads " + str(mthreads))
         for task in as_completed(mthreads):
             task_result = task.result()
     return task_result
@@ -584,7 +584,7 @@ def fStart_Workflow(fss_container):
     payload8 = "</StartWorkflowRequest>"
     payload = payload1 + payload2 + payload3 + payload4 + payload5 + payload6 + payload7 + payload8
 
-    print(payload)
+    root_logger.info(payload)
     headers = new_token(username, password, basename)
     wf_start_response = requests.request("POST", url, data=payload, headers=headers, params=querystring)
     root_logger.info("fStart_Workflow : Workflow Response : " + wf_start_response.text)
@@ -675,7 +675,7 @@ logs = Path(masterDir_path) / 'Logs'
 ###Logging
 LogFile = os.path.join(logs, "Log_" + str(fTime()) + ".log")
 root_logger = logging.getLogger()  # logging object created
-root_logger.setLevel(logging.DEBUG)
+root_logger.setLevel(logging.INFO)
 handler = logging.FileHandler(LogFile, 'w', 'utf-8')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
 root_logger.addHandler(handler)
@@ -745,7 +745,7 @@ if first_step == '1':
                                     collection = collection_folder_path.split('Source' + os.sep)[-1].split(os.sep)[0]
                                     for child_dir in os.listdir(parent_folders):
                                         if os.path.isdir(os.path.join(parent_folders, child_dir)):
-                                            print(child_dir)
+                                            root_logger.info(child_dir)
                                             asset_folder = child_dir.replace('.', '_') + '.pax'
                                             os.makedirs(
                                                 os.path.join(working, collection, os.sep.join(directory_list),
@@ -789,7 +789,7 @@ if first_step == '1':
                                 else:
                                     # figure out what to do if there is no folder heirarchy
                                     collection = r.split('Source' + os.sep)[-1].split(os.sep)[0]
-                                    print(collection)
+                                    root_logger.info(collection)
                                     for child_dir in os.listdir(parent_folders):
                                         if os.path.isdir(os.path.join(parent_folders, child_dir)):
                                             # print(child_dir)
@@ -885,7 +885,7 @@ if first_step == '1':
                                                                       r.split('Bag-')[-1].split(os.sep)[0].replace('.',
                                                                                                                    '_') + '_mods' + '.xml'))
                                     for a in os.listdir(r):
-                                        print(a)
+                                        root_logger.info(a)
                                         x = re.findall(r'DC.\w+', os.path.join(r, a))
                                         if x:
                                             shutil.copy(os.path.join(r, a), os.path.join(working, collection,
@@ -931,7 +931,7 @@ if first_step == '1':
                                                                       r.split('Bag-')[-1].split(os.sep)[0].replace('.',
                                                                                                                    '_') + '_mods' + '.xml'))
                                     for a in os.listdir(r):
-                                        print(a)
+                                        root_logger.info(a)
                                         x = re.findall(r'DC.\w+', os.path.join(r, a))
                                         if x:
                                             shutil.copy(os.path.join(r, a), os.path.join(working, collection,
@@ -976,7 +976,7 @@ if first_step == '1':
 
     ####Need to figure out how to write DC metadata and EAD (where applicable to collection level folder
     for folder in folders_deduped:
-        print(folder)
+        root_logger.info(folder)
         if folder.split(os.sep)[-1] != 'Working':
             fCreateFolderOpexFragments(folder, 'open')
 
@@ -989,7 +989,7 @@ if first_step == '1':
 
     # iterate over container list to create container OPEX
     for c in container_list:
-        # root_logger.info('Creating container OPEX for {}'.format(c))
+        root_logger.debug('Creating container OPEX for {}'.format(c))
         container_path = os.path.join(final, c)
         list_folders_in_dir.clear()
         list_files_in_dir.clear()
@@ -1000,7 +1000,7 @@ if first_step == '1':
             c_opex_file_name = c + ".opex"
             c_temp_opex_file = os.path.join(container_path, c_opex_file_name)
             for c_child in os.listdir(container_path):
-                print(c_child)
+                root_logger.info(c_child)
                 if os.path.isdir(os.path.join(container_path, c_child)):  # ignore the .opex file
                     list_folders_in_dir.append(c_child)
             # print(c_list_folders_in_dir)
@@ -1042,7 +1042,7 @@ else:
 
     LogFile = os.path.join(logs, "Log_" + str(fTime()) + ".log")
     root_logger = logging.getLogger()  # logging object created
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.INFO)
     handler = logging.FileHandler(LogFile, 'w', 'utf-8')
     handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
     root_logger.addHandler(handler)
