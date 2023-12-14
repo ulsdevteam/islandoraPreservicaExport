@@ -163,7 +163,7 @@ def fCreateOpexFragment(list_folders_in_dir, list_files_in_dir, LegacyXIP,
                 else:
                     opex_file = ET.SubElement(opex_files, opex + 'File', {'type': 'content'})
                     opex_file.text = list_files_in_dir[lff]
-            root_logger.debug("fCreateFolderOpexFragments 5 : opex_data_file " + opex_file.text)
+                root_logger.debug("fCreateFolderOpexFragments 5 : opex_data_file " + opex_file.text)
 
     # Opex Properties
     opex_properties = ET.SubElement(opex_root, opex + 'Properties')
@@ -459,7 +459,7 @@ def fQuery_container_folder(qcf_target_folder, bucket_prefix, selection_type):
             container_to_pass_back = os.path.basename(qroot)
         for qf in qf_names:
             response = False
-            if os.path.isfile(os.path.join(qroot, qf)) and not qf.endswith('.gitkeep') :
+            if os.path.isfile(os.path.join(qroot, qf)) and not qf.endswith('.gitkeep'):
                 qfull_path = os.path.join(qroot, qf)
                 root_logger.info("qfull_path " + str(qfull_path))
                 f_size = fGet_filesize(qfull_path)
@@ -888,8 +888,7 @@ if first_step == '1':
                                         root_logger.info(a)
                                         x = re.findall(r'DC.\w+', os.path.join(r, a))
                                         if x:
-                                            shutil.copy(os.path.join(r, a), os.path.join(working, collection,
-                                                                                                r.split('Bag-')[-1].split(
+                                            shutil.copy(os.path.join(r, a), os.path.join(working, collection,os.sep.join(directory_list),r.split('Bag-')[-1].split(
                                                                                                     os.sep)[0].replace('.',
                                                                                                                        '_') + '_dc' + '.xml'))
                                     for b in os.listdir(r):
