@@ -397,7 +397,7 @@ def fCreatePAXFolderOpexFragments(pax_folder, security_tag):
 
         DC_NSMAP = fGetDescriptiveMetadata(dc_metadata).nsmap
 
-        source_ID = fGetDescriptiveMetadata(dc_metadata).find('.//dc:identifier', DC_NSMAP).text
+        source_ID = fGetDescriptiveMetadata(dc_metadata).find('.//dc:identifier[starts-with(text(),"pitt:")]', DC_NSMAP).text
         DC_title = fGetDescriptiveMetadata(dc_metadata).find('.//dc:title', DC_NSMAP).text
 
         ref_fldr_desc = DC_title
