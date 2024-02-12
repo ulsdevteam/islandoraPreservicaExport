@@ -24,7 +24,22 @@ See the `sample.ini` configuration file for details.
 
 ### Process
 
-TODO
+Edit the pitt.ini file to configure the the Preservica, S3, and local settings.
+
+Copy the content to be packaged into a directory within the Source directory indicated by the configuration.
+
+Execute `pitt_pax_v2.py` via Python.  You will be prompted to either create a new package or upload an existing package.
+
+When creating a package, the script will:
+* extract any zipped bags found in the Source directory
+* copy select content from the Source to the Working directory
+* create OPEX/PAX files in the Working directory
+* copy the PAX to the Final directory
+* delete the Working directory
+
+When uploading a package, the script will:
+* copy the PAX from Final to the S3 bucket
+* initiate a Preservica API call to start the selected Ingest workflow
 
 ## Disclaimer
 
