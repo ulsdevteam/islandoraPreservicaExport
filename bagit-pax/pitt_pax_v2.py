@@ -397,9 +397,9 @@ def fCreatePAXFolderOpexFragments(pax_folder, security_tag):
 
         DC_NSMAP = fGetDescriptiveMetadata(dc_metadata).nsmap
 
-        dcIdentifiers = fGetDescriptiveMetadata(dc_metadata).findall('.//dc:identifier', DC_NSMAP)
+        dcIdentifiers = fGetDescriptiveMetadata(dc_metadata).findall('.//{http://purl.org/dc/elements/1.1/}identifier', DC_NSMAP)
         source_ID = [pitt_id.text for pitt_id in dcIdentifiers if pitt_id.text is not None and pitt_id.text.startswith('pitt')][0]
-        DC_title = fGetDescriptiveMetadata(dc_metadata).find('.//dc:title', DC_NSMAP).text
+        DC_title = fGetDescriptiveMetadata(dc_metadata).find('.//{http://purl.org/dc/elements/1.1/}title', DC_NSMAP).text
 
         ref_fldr_desc = DC_title
         # Descriptive metadata
@@ -732,13 +732,13 @@ if first_step == '1':
                                 root_element = xmlObject.getroot()
                                 nsmap = root_element.nsmap
                                 # print(ET.tostring(root, pretty_print=True).decode())
-                                if root_element.find('.//mods:relatedItem/mods:identifier',
-                                                     nsmap) is not None:  # testing for mods:relatedItem/mods:Identifier. This will determine the folder heirarchy
-                                    relatedID = root_element.find('.//mods:relatedItem/mods:identifier', nsmap).text
+                                if root_element.find('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}identifier',
+                                                     nsmap) is not None:  # testing for {http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}Identifier. This will determine the folder heirarchy
+                                    relatedID = root_element.find('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}identifier', nsmap).text
                                     directory_list = [
                                         relatedID + ' ' + note.attrib['type'] + ' ' + note.text.split(' ')[0].rstrip(
                                             '.')
-                                        for note in root_element.findall('.//mods:relatedItem/mods:note', nsmap) if
+                                        for note in root_element.findall('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}note', nsmap) if
                                         note.attrib['type'] == 'series' or note.attrib['type'] == 'subseries' or
                                         note.attrib['type'] == 'otherlevel']
                                     directory_list.append(asset_parent.replace('Bag-', ''))
@@ -848,15 +848,14 @@ if first_step == '1':
                                                  f))  # create an xml object that python can parse using lxml libraries
                                 root_element = xmlObject.getroot()
                                 nsmap = root_element.nsmap
-                                # print(ET.tostring(root_element, pretty_print=True).decode())
-                                if root_element.find('.//mods:relatedItem/mods:identifier',
-                                                     nsmap) is not None:  # testing for mods:relatedItem/mods:Identifier. This will determine the folder heirarchy
-                                    relatedID = root_element.find('.//mods:relatedItem/mods:identifier', nsmap).text
+                                if root_element.find('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}identifier',
+                                                     nsmap) is not None:  # testing for {http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}Identifier. This will determine the folder heirarchy
+                                    relatedID = root_element.find('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}identifier', nsmap).text
                                     directory_list = [
                                         relatedID + ' ' + note.attrib['type'] + ' ' + note.text.split(' ')[0].rstrip(
                                             '.')
                                         for note
-                                        in root_element.findall('.//mods:relatedItem/mods:note', nsmap) if
+                                        in root_element.findall('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}note', nsmap) if
                                         note.attrib['type'] == 'series' or note.attrib['type'] == 'subseries' or
                                         note.attrib[
                                             'type'] == 'otherlevel']
