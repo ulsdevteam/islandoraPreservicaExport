@@ -54,8 +54,17 @@ do
 done
 # create a directory where we can store files representing each bagged object, with the timestamp of when the bag was created
 mkdir $TMPDIR/Bag-dates
+DCFILES=
+if compgen -G "$TMPDIR/*/data/DC.*" > /dev/null
+then
+  DCFILES="$DCFILES "`compgen -G "$TMPDIR/*/data/DC.*"`
+fi
+if compgen -G "$TMPDIR/*/data/*/DC.*" > /dev/null
+then
+  DCFILES="$DCFILES "`compgen -G "$TMPDIR/*/data/*/DC.*"`
+fi
 # iterate across each DC file, writing into a PID list for Datastream CRUD and capturing the timestamp of the original bag
-for i in $TMPDIR/*/data/DC.* $TMPDIR/*/data/*/DC.*
+for i in $DCFILES
 do
   # extract the PID (dc:identifier, begins with "pitt:")
   PID=`xmllint --xpath '//*[local-name()="identifier" and namespace-uri()="http://purl.org/dc/elements/1.1/" and substring(text(), 1, 5)="pitt:"]/text()' $i 2> /dev/null`
