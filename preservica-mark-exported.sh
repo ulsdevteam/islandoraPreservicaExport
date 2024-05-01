@@ -74,8 +74,7 @@ do
     f=${i#"$TMPDIR/"}
     f=${f%%/data*}
     # Set a file with the modification datetime of the Bag, in a Datastream CRUD naming
-    CRUDname=`echo $PID | sed 's/:/_/'`
-    touch -r $BAGDIR/${f}.zip $TMPDIR/Bag-dates/$CRUDname
+    touch -r $BAGDIR/${f}.zip $TMPDIR/Bag-dates/$PID
     # Echo the PID to our list
     echo $PID
   else
@@ -84,17 +83,17 @@ do
   fi
 done > $TMPDIR/dsio.pids
 # Fetch the RELS-EXT for each PID in the list
-drush -qy --root=/var/www/html/drupal7/ --user=$USER --uri=http://gamera.library.pitt.edu islandora_datastream_crud_fetch_datastreams --pid_file=$TMPDIR/dsio.pids --dsid=RELS-EXT --datastreams_directory=$TMPDIR/rels-ext
+drush -qy --root=/var/www/html/drupal7/ --user=$USER --uri=http://gamera.library.pitt.edu islandora_datastream_crud_fetch_datastreams --pid_file=$TMPDIR/dsio.pids --dsid=RELS-EXT --datastreams_directory=$TMPDIR/rels-ext --filename_separator=^
 if [[ $? -ne 0 ]]
 then
   >&2 echo "CRUD fetch returned an error"
   ERRORFLAG=1
 fi
 # Iterate across each RELS-EXT
-for i in $TMPDIR/rels-ext/*_RELS-EXT.*
+for i in $TMPDIR/rels-ext/*^RELS-EXT.*
 do
   # We wrote this file with the timestamp of the bag earlier; remove the RELS_EXT.ext suffix to find it
-  f=`basename $i | sed 's/_RELS-EXT.*$//'`
+  f=`basename $i | sed 's/\^RELS-EXT.*$//'`
   # Find the datestamp on the Bag
   EXPORTED=`date --utc -r $TMPDIR/Bag-dates/${f} "+%FT%T.%3NZ"`
   if [[ "$EXPORTED" = "" ]]
@@ -114,7 +113,7 @@ done
 if [[ "$ERRORFLAG" = "" ]]
 then
   # Push the updated RELS-EXT datastreams via Datastream CRUD
-  drush -qy --root=/var/www/html/drupal7/ --user=$USER --uri=http://gamera.library.pitt.edu islandora_datastream_crud_push_datastreams --datastreams_mimetype='application/rdf+xml' --datastreams_source_directory=$TMPDIR/rels-ext --no_derivs
+  drush -qy --root=/var/www/html/drupal7/ --user=$USER --uri=http://gamera.library.pitt.edu islandora_datastream_crud_push_datastreams --datastreams_mimetype='application/rdf+xml' --datastreams_source_directory=$TMPDIR/rels-ext --no_derivs --filename_separator=^
   if [[ $? -ne 0 ]]
   then
     >&2 echo "CRUD push returned an error"
