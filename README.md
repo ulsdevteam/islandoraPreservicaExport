@@ -17,3 +17,6 @@ A script to examine a download of a Process (Ingest Card) from the Preserica Mon
 This command takes a single argument of the path to the downloaded file.
 
 The script will add (or replace) the element of `islandora:preservicaRef` to the RELS-EXT with the value of the Preservica Ref identifier.
+
+## islandoraObjectCheck.py
+The file is to intake a pidlist file and search through islandora objects via solr admin, and process the response from search tooutput a csv file containing the pid from intake and the child page items assoicated with. 
