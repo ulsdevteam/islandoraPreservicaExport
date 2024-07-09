@@ -2,158 +2,98 @@
 ## readin a pidlist file containing pitt identifiers and process through
 ## islandora object api request to compute the number of the pids' child  
 ## objects with the filter 'RELS_EXT_isPageOf_uri_s' on objects' metadata
-## Created 06/17/2024
-## @author: Ruiling Z.
-## @params: file-pids.csv, test-solr-object-3.xml
-## @result: mscount.csv
+## @params: file_pids
+## @result: file_PgCount
 
 import requests, json, os
-import re
 import csv
 from collections import defaultdict
 
-#locate xml data
-from xml.etree import ElementTree as etree
-
 f_path = os.path.dirname(os.path.realpath(__file__)) 
-'''
-1) api to get islandora object via filter of pageOf attributes
-2) dump the objectIDs(PID) with the counts of children records associated to the PIDs
+file_pids = "./input/file-pids.csv"   #could get from drush
+file_pgCount="./output/membercount.csv"
 
-3) preservica report api, similarly get compoundObjectIDs(conceptual objs) counts, and 
-   count the associated children members baseon the concptual objectID 
-4) validate both parent level and with the kids level
-
-'''
-f_pids = "file-pids.csv"
-mscount_file="mscount.csv"
+#retrieve Object and its pageOf members from islandora 
 def get_islandoraData(s_query):
     #pid format convention
-    str_q = "PID:pitt\\" + s_query[4:]
+    q_par = "PID:pitt\\" + s_query[4:]
+    q_pages = "RELS_EXT_isPageOf_uri_s: info\\:fedora\\/pitt\\" + s_query[4:] + " OR " + q_par
     try:
         #step1). retrieve object from islandora api request
         url ='https://gamera.library.pitt.edu/solr/uls_digital_core/select'
-        payload = {"q": str_q,
-                "fl":"PID,RELS_EXT_isPageOf_uri_s,RELS_EXT_hasModel_uri_ms",
-                "sort":"PID asc", 
+        payload = {"q": q_pages,
+                "fl":"PID,RELS_EXT_isPageOf_uri_s,RELS_EXT_hasModel_uri_ms,RELS_EXT_preservicaRef_literal_s",
+                "sort":"PID asc",
+                "rows":"100000",
                 "wt":"json"}
 
         responses = requests.get(url, params=payload)
         if (responses.status_code ==200) :
-            # store json data rest api response 
             json_data = (responses.json())
             results = json_data['response']
-            #print (json.dumps(results['docs'], indent=4))
+            #print(json.dumps(ms_items, indent=4))
             return (results)
     except requests.exceptions.HTTPError as e:
         print("Error: " + str(e))
-#define a dict value with a value of list holding ms_count, and ms_items
+
+#define a dict value with a value of list holding islandora object and its pageOf count
 ms_items = defaultdict(list)
 
-# step2) Helper function used to compute the multpart objects with the relation mapping of RELS_EXT_isPageOf_uri_s 
-# to the pid from the solr api response
+# Helper function to compute the multpart objects via the relation mapping
+# 'RELS_EXT_isPageOf_uri_s' to the Object PID from solr api response
 def get_multipart_count(objID):
     results = get_islandoraData(objID)
-    assert isinstance(results, dict) #make sure the response data is a dict 
+    numOfpages = results['numFound']
+    s_preservicaRef ="" 
+    #make sure the response data is a dict
+    assert isinstance(results, dict) 
+   
     for data in results['docs']:
-        tmpPagelst ={}
-        tempParentID =""
-        #pass the objID to solr to retrieve data from islandora
-        if ((data["PID"]) == objID and "RELS_EXT_isPageOf_uri_s" in data):
-        
-            # extract the parentPID from the pageOf
-            tempParentID = data["RELS_EXT_isPageOf_uri_s"].rpartition("/")[2]
-            #print("Check2).", objID, " ", data["RELS_EXT_isPageOf_uri_s"], "parentObj: " ,tempParentID)
-            
-            #first time associate page item to parent
-            if not (tempParentID in ms_items.keys()):
-                tmpPagelst['pageIds']=[]
-                tmpPagelst['pageIds'].append(objID)
+        tmpPagelst = defaultdict(list)
+        #capture the preservica reference ID associated to the ObjectID, if existing
+        if ( "RELS_EXT_preservicaRef_literal_s" in data):
+            s_preservicaRef = data["RELS_EXT_preservicaRef_literal_s"]
+            numOfpages -=1   #exclude parent Object
+
+        #pass objID to solr to retrieve childcontent from islandora
+        if ("RELS_EXT_isPageOf_uri_s" in data):
+            #retrieve parent object associated
+            uri_obj = data["RELS_EXT_isPageOf_uri_s"].split("/")[-1]
+            if not ( uri_obj in ms_items.keys()):      
                 tmpPagelst['counter'] = 1
-                ms_items[tempParentID]=tmpPagelst
-                print("New key added in ms_items: ", ms_items[tempParentID])
-            
+                ms_items[uri_obj]=tmpPagelst
             else:
-                #update the value for the key matching tempParentID
-                v= [v for k,v in ms_items.items() if k == tempParentID]
+                #update the value for the key matching object ID
+                v= [v for k,v in ms_items.items() if k == uri_obj]
                 v[0]["counter"] += 1 
-                v[0]["pageIds"].append(objID)
-                #print("after update: ", ms_items[tempParentID])
+           
+    #export the associated preservica reference ID if existing           
+    if (s_preservicaRef):
+        val = [val for keyId, val in ms_items.items() if keyId==objID]
+        val[0]['preservica_RefID'] = s_preservicaRef
+
     return ms_items
 
-#Main Function: takes in csv file containing object IDs, and iterate each ID to check on islandora via solr search
-#it outputs a csv file with the number of pageOf items associated with each PID
+# Main Function: takes in PIDfile in the format {PID}. It iterates pids to check on islandora via 
+# solr search, and outputs a csv file containing total# of the Object's pageOf items from islandora, and 
+# preservica referenceID associated to the pid, if exising
 def pageCount_of_Pid (inFile_pids):
-    #open file to read the pids
     with open (os.path.join(f_path, inFile_pids), 'r') as pid_f:
-        pidreader = csv.DictReader(pid_f)
-
+        pidreader = csv.reader(pid_f)
+        
         #step3). write output file
-        with open(os.path.join(f_path, mscount_file), 'w', newline='') as match_f:
-            header_lst = ['PID', 'num_isPageOf_uri_s', 'pageitems']
-            f_writer = csv.DictWriter(match_f, fieldnames=header_lst)
-            f_writer.writeheader()
-            #now interate each objs from response
+        with open(os.path.join(f_path, file_pgCount), 'w', newline='') as match_f:
+            header_lst = ['PID', 'num_isPageOf_uri_s', 'preservica_refID']
+            f_writer = csv.writer(match_f, delimiter=',')
+            f_writer.writerow(header_lst)
+            #now iterate each objs from response
             for row in pidreader:
-                item = row['pitt-pid']
-                #print("Check1) passing pid: ", item)
-                mydict = get_multipart_count(item)
+                mydict = get_multipart_count(row[0])  
+                
             if mydict:
-                print("Check: final ms_item before writing in file " ,json.dumps(mydict, indent =4)) 
                 for k,v in mydict.items():
-                    f_writer.writerow({header_lst[0]:k, header_lst[1]:v['counter'],header_lst[2]:v['pageIds']})
-
-pageCount_of_Pid(f_pids)
-
-"""
-##testing draft for the version parsing xml: readin a pidlist file containing pitt identifiers and process through
-## the object api request response from islandora to compute the number of the pids' child objects with 
-## the filter 'RELS_EXT_isPageOf_uri_s' 
-## Created 06/13/2024
-## @params: file-pids.csv, test-solr-object-3.xml
-## @result: mscount.csv
-"""
-xmlfile ="test-solr-object-3.xml"
-tmptree=etree.parse(os.path.join(f_path, xmlfile))
-#print(tmptree.getroot().tag)     #response
-rootnode =tmptree.getroot()
-#print(etree.tostring(rootnode, encoding='utf8').decode('utf8'))
-
-
-#step2). read a pids input file
-#iterate name to locate pid
-pid_lst =['pitt:31735070061167','pitt:31735029251976']
-
-def checkObjMs(id_lst):
-    ms_dict =dict();
-    #open file to read the pids
-    with open(os.path.join(f_path, f_pids), 'r') as pid_f:
-        pidreader = csv.DictReader(pid_f)
-
-        #step3). write output file
-        with open(os.path.join(f_path, mscount_file), 'w', newline='') as match_f:
-            header_lst = ['PID', 'num_isPageOf_uri_s']
-            f_writer = csv.DictWriter(match_f, fieldnames=header_lst)
-            f_writer.writeheader()
-    
-            #now loop the result to interate each records matching the creteria
-            for row in pidreader:
-                item = row['pitt-pid']
-            # find the match pid under <doc>
-                counter =0
-                for em in tmptree.findall(".//*[@name='PID']"):
-                    if (em.text == item):
-                        print("element: ", em.attrib, "value: ", em.text)
-                        for ms in tmptree.findall(".//*[@name='RELS_EXT_isPageOf_uri_s']"):
-                        #if ms.text.find(em.text) != -1: //find match
-                            found = re.search(r'[a-zA-Z]*(pitt)\:{}$'.format(em.text.split(':')[-1]), ms.text)
-                            if(found):
-                                counter +=1 #have child elements, then find the pid   
-                        if counter >0:
-                            print("ms element: " + em.text + " child element: " + str(counter) + "\n" )
-                        else:
-                            print("No child element found in ms element: " + em.text +"\n" )
-                        f_writer.writerow({header_lst[0]:em.text.split(":")[-1], header_lst[1]:counter})
-#testcall   -PASS           
-#checkObjMs(pid_lst)
-
+                    f_writer.writerow([k, v['counter'], v['preservica_RefID']])
+                
+#Driver
+if __name__ == "__main__":
+    pageCount_of_Pid(file_pids)

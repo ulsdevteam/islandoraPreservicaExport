@@ -19,4 +19,14 @@ This command takes a single argument of the path to the downloaded file.
 The script will add (or replace) the element of `islandora:preservicaRef` to the RELS-EXT with the value of the Preservica Ref identifier.
 
 ## islandoraObjectCheck.py
-The file is to intake a pidlist file and search through islandora objects via solr admin, and process the response from search tooutput a csv file containing the pid from intake and the child page items assoicated with. 
+The file is to intake a pidlist file and search through islandora objects via solr admin, then process the response and compute the total child pageitems of the object, as well as the preservia reference ID associated to the object
+
+## preservicaCheck.py
+The file is to generate preservica token to access the preservica restful apis
+
+## preservicaObjCapture.py
+The file is to intake islandora's objects' pageOf member counts and compare the bitstreams count from the corresponding preservica objects. The script also execute a drush command to export the rdf for the countMatched objects.
+
+## rdfUpdate.py
+The script is to iterate all the updated rdf files and use drush push back to islandora.
+ 

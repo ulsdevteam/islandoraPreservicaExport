@@ -1,0 +1,7 @@
+*.log
+*.txt
+*.xml
+
+#sample testing file
+#input/
+#output/
