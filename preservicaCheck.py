@@ -1,5 +1,4 @@
 import requests
-import time
 
 #generate token to access preservica restful api
 sUrl="https://pitt.preservica.com/api/accesstoken/login"

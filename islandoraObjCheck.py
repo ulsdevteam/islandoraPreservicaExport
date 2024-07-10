@@ -7,11 +7,12 @@
 
 import requests, json, os
 import csv
+import subprocess 
 from collections import defaultdict
 
 f_path = os.path.dirname(os.path.realpath(__file__)) 
-file_pids = "./input/file-pids.csv"   #could get from drush
-file_pgCount="./output/membercount.csv"
+file_pids = "./input/file-pids.csv"   #intakes pidfile
+file_pgCount="./output/membercount.csv" 
 
 #retrieve Object and its pageOf members from islandora 
 def get_islandoraData(s_query):
@@ -70,7 +71,8 @@ def get_multipart_count(objID):
     #export the associated preservica reference ID if existing           
     if (s_preservicaRef):
         val = [val for keyId, val in ms_items.items() if keyId==objID]
-        val[0]['preservica_RefID'] = s_preservicaRef
+        if val:
+            val[0]['preservica_RefID'] = s_preservicaRef
 
     return ms_items
 
@@ -81,7 +83,7 @@ def pageCount_of_Pid (inFile_pids):
     with open (os.path.join(f_path, inFile_pids), 'r') as pid_f:
         pidreader = csv.reader(pid_f)
         
-        #step3). write output file
+        #write output file
         with open(os.path.join(f_path, file_pgCount), 'w', newline='') as match_f:
             header_lst = ['PID', 'num_isPageOf_uri_s', 'preservica_refID']
             f_writer = csv.writer(match_f, delimiter=',')
@@ -94,6 +96,21 @@ def pageCount_of_Pid (inFile_pids):
                 for k,v in mydict.items():
                     f_writer.writerow([k, v['counter'], v['preservica_RefID']])
                 
-#Driver
+def drushfetchPids(): 
+    file_name = os.getcwd() +"/input/file-pids.csv"
+    user = os.environ['USER'] if os.getenv("USER") is not None else os.environ['USERNAME']
+    squery = 'RELS_EXT_preservicaRef_literal_s:* ' 
+    squery += 'AND (RELS_EXT_hasModel_uri_ms:info\:fedora/islandora\:manuscriptCModel OR RELS_EXT_hasModel_uri_ms:info\:fedora/islandora\:newspaperIssueCModel OR RELS_EXT_hasModel_uri_ms:info\:fedora/islandora\:bookCModel)'
+    squery += 'AND NOT RELS_EXT_preservicaChildCount_literal_s:*'
+   
+    try:
+        s = subprocess.check_call (['drush', '--root=/var/www/html/drupal7/', '--user={}'.format(user), \
+    '--uri=http://gamera.library.pitt.edu', 'islandora_datastream_crud_fetch_pids',  \
+    '--solr_query={}'.format(squery), '--pid_file={}'.format(file_name)])
+        
+    except subprocess.CalledProcessError as e: 
+	    print(f"Command failed with return code {e.returncode}")
+
 if __name__ == "__main__":
+    drushfetchPids()
     pageCount_of_Pid(file_pids)

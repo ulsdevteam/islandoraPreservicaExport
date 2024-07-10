@@ -31,7 +31,7 @@ def getVerifiedPids(f_pids):
         with open(os.path.join(f_path, f_output), 'w', newline='') as temp_f:
             csvwriter = csv.DictWriter(temp_f, fieldnames=header_fields)
             for r in csvreader:
-                if (r["bitstreamCount"]):  # verified the match
+                if (r["bitstreamCount"] and ("Mismatch" not in r["bitstreamCount"])):  # verified the match
                     csvwriter.writerow({header_fields[0]:r["PID"]})
 
 #2.Iterate the intake pids and extract the ext-rel file via drush from islandora
@@ -79,13 +79,13 @@ def updateExtRelFile(fpath, fname, e_name):
     with open (os.path.join( f_path, fname ), 'r', newline='') as pf:
         csvreader = csv.DictReader(pf)
         for r in csvreader:
-            if (r["bitstreamCount"]):  # pid with the verified countmatch
-                    #find the ext file matching the name r['PID'], might use re
-                    tmp_pattern = r['PID'] + "^RELS-EXT.rdf"
-                    for file in os.listdir(curr+fpath):
-                        if fnmatch.fnmatch(file, tmp_pattern):
-                            print(file)
-                            fileProcess(file, e_name, r["bitstreamCount"]) 
+            if (r["bitstreamCount"] and ("Mismatch" not in r["bitstreamCount"])):  # pid with the verified countmatch
+                #find the ext file matching the name r['PID'], might use re
+                tmp_pattern = r['PID'] + "^RELS-EXT.rdf"
+                for file in os.listdir(curr+fpath):
+                    if fnmatch.fnmatch(file, tmp_pattern):
+                        print(file)
+                        fileProcess(file, e_name, r["bitstreamCount"]) 
 
 #5. push modified .rdf to islandora via drush
 def drushpushDatastreams(): 
