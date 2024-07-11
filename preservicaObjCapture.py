@@ -165,10 +165,12 @@ def preservica_bitstream_valid (f_in):
                         if v == int(row['num_isPageOf_uri_s']):
                             f_writer.writerow({header_lst[0]:row['PID'], header_lst[1]:row['num_isPageOf_uri_s'],
                                            header_lst[2]:k, header_lst[3]:v})
+                            print("ObjectID: ", row['PID'] , "membercounts is matched ")
                         else:
                             tmp = "Mismatch-" + str(v)
                             f_writer.writerow({header_lst[0]:row['PID'], header_lst[1]:row['num_isPageOf_uri_s'],
                                            header_lst[2]:k, header_lst[3]:tmp})
+                            print("ObjectID: ", row['PID'] , " membercounts is not matched ")
         
 if __name__ == "__main__": 
     curr_session = token_fn.generateToken()
