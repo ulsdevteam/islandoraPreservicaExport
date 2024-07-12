@@ -20,7 +20,6 @@ The script will add (or replace) the element of `islandora:preservicaRef` to the
 
 ## The python files described below are to utilize the comparison between pageOf members of islandora objects and bitstreams of the corresponding objects from preservica
 
-#### Software specification: *Python 3.8+ recommended*
 ### islandoraObjectCheck.py
 The file is to intake a pidlist file and search through islandora objects via solr admin, then process the response and compute the total child pageitems of the object, as well as the preservia reference ID associated to the object
 

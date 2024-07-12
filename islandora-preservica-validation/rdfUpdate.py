@@ -31,7 +31,7 @@ def getVerifiedPids(f_pids):
         with open(os.path.join(f_path, f_output), 'w', newline='') as temp_f:
             csvwriter = csv.DictWriter(temp_f, fieldnames=header_fields)
             for r in csvreader:
-                if (r["bitstreamCount"] and ("Mismatch" not in r["bitstreamCount"])):  # verified the match
+                if (r["bitstreamCount"] and (r["isValid"]=="Y")):
                     csvwriter.writerow({header_fields[0]:r["PID"]})
 
 #2.Iterate the intake pids and extract the ext-rel file via drush from islandora
@@ -79,8 +79,7 @@ def updateExtRelFile(fpath, fname, e_name):
     with open (os.path.join( f_path, fname ), 'r', newline='') as pf:
         csvreader = csv.DictReader(pf)
         for r in csvreader:
-            if (r["bitstreamCount"] and ("Mismatch" not in r["bitstreamCount"])):  # pid with the verified countmatch
-                #find the ext file matching the name r['PID'], might use re
+            if (r["bitstreamCount"] and (r["isValid"]=="Y")): 
                 tmp_pattern = r['PID'] + "^RELS-EXT.rdf"
                 for file in os.listdir(curr+fpath):
                     if fnmatch.fnmatch(file, tmp_pattern):
@@ -98,15 +97,22 @@ def drushpushDatastreams():
 	    print(f"Command failed with return code {e.returncode}")
 
 if __name__ == "__main__": 
+    #make clean directories before retrieving datastreams
+    if os.path.exists(curr + extRel_fpath) and os.path.isdir(curr + extRel_fpath):
+        shutil.rmtree(curr + extRel_fpath)
+    if os.path.exists(curr + update_fpath) and os.path.isdir(curr + update_fpath):
+        shutil.rmtree(curr + update_fpath)
+
+    #extract the datastreams for matched objects
     getVerifiedPids(valid_result_f) 
     drushfetchDatastream() 
     
-    ##copy all the file in an update_fpath to use for testing purpose
-    org_files = os.listdir(curr+extRel_fpath)
-    shutil.copytree(curr+extRel_fpath, curr+update_fpath)
+    #keep original datastreams for testing purpose
+    org_files = os.listdir(curr + extRel_fpath)
+    shutil.copytree(curr+extRel_fpath, curr + update_fpath)
 
     newTagName = "preservicaChildCount" 
-    updateExtRelFile(update_fpath, valid_result_f,newTagName)
+    updateExtRelFile(update_fpath, valid_result_f, newTagName)
     #drushpushDatastreams()
 
   

@@ -23,7 +23,6 @@ tmp =""
 headers = {
     'Preservica-Access-Token': tmp
 }
-
 curr_session=[]
 
 sInfoObj_baseUrl = "https://pitt.preservica.com/api/entity/information-objects/"
@@ -130,7 +129,6 @@ def getRepresentionInfo(sUrl, sRef_ID):
                         contentObj_lst[next(iter(listOfRepresentContent))] = BitstreamCount
                     else:
                         contentObj_lst[next(iter(listOfRepresentContent))] += BitstreamCount
-            #this should be the total bitstreams under the InformationObject
             return (contentObj_lst)    
         except requests.exceptions.RequestException as e:
             print("Error: ", e)  
@@ -142,20 +140,19 @@ def preservica_bitstream_valid (f_in):
         csvreader = csv.DictReader(islandoraCount_f)
         
         with open(os.path.join(f_path, valid_result_f), 'w', newline='') as result_f:
-            header_lst = ['PID', 'islandora_count', 'preservica_refID', 'bitstreamCount']
+            header_lst = ['PID', 'islandora_count', 'preservica_refID', 'bitstreamCount','isValid']
             f_writer = csv.DictWriter(result_f, fieldnames=header_lst)
             f_writer.writeheader()
-            #now iterate each objs from response
-            global st_timer, curr_session
             
+            global st_timer, curr_session
             for row in csvreader:
-                #add logic to check token expiration before access preservica apis
-                #print(f"usage:  {(time.time()-st_timer)*10**3:.02f} ms", curr_session)
+                #logic to check token expiration
                 if (round((time.time()-st_timer)*10**3) - 600000 >0 ):  
                    new_session = token_fn.getRefreshToken(curr_session)
                    curr_session[0]= new_session[0]
                    curr_session[1] =new_session[1]
                    headers['Preservica-Access-Token']= new_session[0]
+                   print("Check new token: ", curr_session[0])
                    st_timer = time.time()
                 
                 bitstream_dict ={}
@@ -164,13 +161,12 @@ def preservica_bitstream_valid (f_in):
                     for k,v in bitstream_dict.items():
                         if v == int(row['num_isPageOf_uri_s']):
                             f_writer.writerow({header_lst[0]:row['PID'], header_lst[1]:row['num_isPageOf_uri_s'],
-                                           header_lst[2]:k, header_lst[3]:v})
-                            print("ObjectID: ", row['PID'] , "membercounts is matched ")
+                                           header_lst[2]:k, header_lst[3]:v, header_lst[4]:"Y"})
+                            print( row['PID'] , " membercounts matched preservica bitstreams ", v)
                         else:
-                            tmp = "Mismatch-" + str(v)
                             f_writer.writerow({header_lst[0]:row['PID'], header_lst[1]:row['num_isPageOf_uri_s'],
-                                           header_lst[2]:k, header_lst[3]:tmp})
-                            print("ObjectID: ", row['PID'] , " membercounts is not matched ")
+                                           header_lst[2]:k, header_lst[3]:v, header_lst[4]:"N"})
+                            print(row['PID'] , "membercounts " , row['num_isPageOf_uri_s'], " mismatched preservica bitstreams ", v )
         
 if __name__ == "__main__": 
     curr_session = token_fn.generateToken()
