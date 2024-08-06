@@ -3,8 +3,8 @@
 ## process an inputFile containing Islandora Objects'pid,numberOfPage of the Object to valid 
 ## the associated preservica objects by checking the count of the bitstreams for each preservica 
 ## object matching the numberOfPage count from the correspondent islandora object
-## @params: islandorapids.csv :  file generated from islandoraObjCheck process
-## @result: valid_result.csv
+## @params: islandora_count_f :  file generated from islandoraObjCheck process
+## @result: valid_result_f: csv output
 ###########################################################
 import requests, json, csv
 from xml.etree import ElementTree as etree
@@ -29,6 +29,11 @@ sInfoObj_baseUrl = "https://pitt.preservica.com/api/entity/information-objects/"
 sContentObj_baseUrl = "https://pitt.preservica.com/api/entity/content-objects/"
 
 InfoObjdata = defaultdict(list)
+#function to retrieve details of the preservica information object
+#@param: sInfoObj_baseUrl bind with the preservica refId
+#@return:  dict {'PIDInfo':  preservica IO identifer, 'representationInfo': IO Representation url} if success, 
+#          otherwise output request error
+#
 def getObjInfo(apiUrl):      
     InfoObjdata = defaultdict(list)
     try:
@@ -38,19 +43,20 @@ def getObjInfo(apiUrl):
         
         #process the xml
         entity_response = etree.fromstring(xml_response)
-        reference = entity_response.find('.//{http://preservica.com/XIP/v7.2}Ref')
-        identifier = entity_response.find('.//{http://preservica.com/EntityAPI/v7.2}Identifiers')
-        representation = entity_response.find('.//{http://preservica.com/EntityAPI/v7.2}Representations')
+        reference = entity_response.find('.//{http://preservica.com/XIP/v7.3}Ref')
+        identifier = entity_response.find('.//{http://preservica.com/EntityAPI/v7.3}Identifiers')
+        representation = entity_response.find('.//{http://preservica.com/EntityAPI/v7.3}Representations')
         tmpObjInfo = {}
         tmpObjInfo["PIDInfo"] = identifier.text
         tmpObjInfo["representationInfo"] = representation.text
         InfoObjdata[reference.text] = tmpObjInfo
-        
         return InfoObjdata
     except requests.exceptions.RequestException as e:
         print("Error: ", e)
            
-#capture all ContentObjects from Representations : dict {objectId: contentids}
+#capture all ContentObjects from Representations 
+#@param: preservica CO base apiUrl
+#@return: dict {objectId: contentids}
 def getContentObjID(sRep_Url):
     r = requests.get(sRep_Url, headers=headers)
     counter =0
@@ -60,8 +66,8 @@ def getContentObjID(sRep_Url):
         xml_resRepresentation = str(r.content.decode('UTF-8'))
         #process the xml
         res_content_response = etree.fromstring(xml_resRepresentation)
-        infoObjID = res_content_response.find('.//{http://preservica.com/XIP/v7.2}InformationObject')
-        contentobjs = res_content_response.findall('.//{http://preservica.com/XIP/v7.2}ContentObjects/{http://preservica.com/XIP/v7.2}ContentObject')
+        infoObjID = res_content_response.find('.//{http://preservica.com/XIP/v7.3}InformationObject')
+        contentobjs = res_content_response.findall('.//{http://preservica.com/XIP/v7.3}ContentObjects/{http://preservica.com/XIP/v7.3}ContentObject')
         tempcontentid =[]
       
         for contentobj in contentobjs:
@@ -71,6 +77,7 @@ def getContentObjID(sRep_Url):
         return contentobjdata
 
 #make a generic call to retrieve object data from preservica restapi 
+#helper function
 def getcontenobjInfo(sObjbaseUrl, sobjitem="", sParam=""):
     try:
         r = (sobjitem and sParam) and requests.get(f'{sObjbaseUrl}{sParam}/{sobjitem}', headers=headers) or requests.get(f'{sObjbaseUrl}', headers=headers)
@@ -81,22 +88,28 @@ def getcontenobjInfo(sObjbaseUrl, sobjitem="", sParam=""):
     except requests.exceptions.RequestException as e:
         print("Error: ", e)
 
-#capture the generations of contentobject id
+#capture generations of the passingin contentobject
+#@param: sContentGen: generation type
+#        sRefId: preservica refID
+#@return: contBitstream: dict with key as the preservica RefID, value of bitstream numCount
 def getbitstreamInfo(sContentGen, sRefId):
     res_gen = getcontenobjInfo(sContentObj_baseUrl, sContentGen , sRefId)
-    genLst = res_gen.findall('.//{http://preservica.com/EntityAPI/v7.2}Generations/{http://preservica.com/EntityAPI/v7.2}Generation[@active ="true"]')
+    genLst = res_gen.findall('.//{http://preservica.com/EntityAPI/v7.3}Generations/{http://preservica.com/EntityAPI/v7.3}Generation[@active ="true"]')
     
     contBitstream = defaultdict(list)
     total = 0
     #iterate generation to get the bitstream count
     for ele in genLst:
-        bitstreamLst = getcontenobjInfo(ele.text).findall('.//{http://preservica.com/XIP/v7.2}Bitstreams/{http://preservica.com/XIP/v7.2}Bitstream')
+        bitstreamLst = getcontenobjInfo(ele.text).findall('.//{http://preservica.com/XIP/v7.3}Bitstreams/{http://preservica.com/XIP/v7.3}Bitstream')
         total += len(bitstreamLst)
     contBitstream[sRefId] = total
     return contBitstream
           
-#retrieves all representations of InformationObj and compute total bitstreams underneath contentObjs for the representation
-def getRepresentionInfo(sUrl, sRef_ID):
+#function to retrieves all representations of InformationObj and compute total bitstreams underneath contentObjs for the representation
+#@param: sUrl: preservica IO base apiUrl
+#        sRef_ID: preservica InformObject RefID
+#@return: contentObj_lst: array of preserva RefID and its bitstreams count
+def getRepresentationInfo(sUrl, sRef_ID):
     stempUrl = sUrl + sRef_ID
     testInfoObj = getObjInfo(stempUrl)
     if len(testInfoObj) > 0:
@@ -107,14 +120,14 @@ def getRepresentionInfo(sUrl, sRef_ID):
             xml_reqRep = str(req_Rep.content.decode('UTF-8')) 
             representation_rep = etree.ElementTree(etree.fromstring(xml_reqRep))
             representations = representation_rep.findall(
-                './/{http://preservica.com/EntityAPI/v7.2}Representations/{http://preservica.com/EntityAPI/v7.2}Representation'
+                './/{http://preservica.com/EntityAPI/v7.3}Representations/{http://preservica.com/EntityAPI/v7.3}Representation'
             )
             contentObj_lst ={}
             BitstreamCount =0
             for representation in representations:
                 #print(representation.text, " ", representation.attrib)
                 
-                #get all content object IDs for each of the represention
+                #get all content object IDs for each of the representation
                 listOfRepresentContent = getContentObjID(representation.text)
                 
                 if len(listOfRepresentContent) > 0 : #get value of the first key since only one element
@@ -132,6 +145,7 @@ def getRepresentionInfo(sUrl, sRef_ID):
             return (contentObj_lst)    
         except requests.exceptions.RequestException as e:
             print("Error: ", e)  
+         
 
 #match the count, if match update the xml, otherwise output log error
 def preservica_bitstream_valid (f_in):
@@ -146,7 +160,7 @@ def preservica_bitstream_valid (f_in):
             
             global st_timer, curr_session
             for row in csvreader:
-                #logic to check token expiration
+                #logic to check token expiration using 10 mins as token refresh cycle
                 if (round((time.time()-st_timer)*10**3) - 600000 >0 ):  
                    new_session = token_fn.getRefreshToken(curr_session)
                    curr_session[0]= new_session[0]
@@ -156,7 +170,7 @@ def preservica_bitstream_valid (f_in):
                    st_timer = time.time()
                 
                 bitstream_dict ={}
-                bitstream_dict = getRepresentionInfo(sInfoObj_baseUrl, row['preservica_refID']) 
+                bitstream_dict = getRepresentationInfo(sInfoObj_baseUrl, row['preservica_refID']) 
                 if bitstream_dict:
                     for k,v in bitstream_dict.items():
                         if v == int(row['num_isPageOf_uri_s']):
@@ -167,7 +181,7 @@ def preservica_bitstream_valid (f_in):
                             f_writer.writerow({header_lst[0]:row['PID'], header_lst[1]:row['num_isPageOf_uri_s'],
                                            header_lst[2]:k, header_lst[3]:v, header_lst[4]:"N"})
                             print(row['PID'] , "membercounts " , row['num_isPageOf_uri_s'], " mismatched preservica bitstreams ", v )
-        
+              
 if __name__ == "__main__": 
     curr_session = token_fn.generateToken()
     print("token :" ,curr_session[0], " refresh-token: ", curr_session[1])

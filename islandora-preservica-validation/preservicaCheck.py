@@ -4,7 +4,7 @@ from getpass import getpass
 
 #generate token to access preservica restful api
 sUrl="https://pitt.preservica.com/api/accesstoken/login"
-headers = {"Contnent-Type": "application/x-www-form-urlencoded"}
+headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
 def generateToken():  
     #retrieve login credentials
@@ -31,3 +31,6 @@ def getRefreshToken(s):
     res = requests.post (sRefreshUrl, headers=newheaders)
     if res.status_code == 200:
         return [res.json()['token'], res.json()['refresh-token']]
+    else:
+        print("Error: Failed to get refresh token" , res.status_code)
+        sys.exit(-1)
