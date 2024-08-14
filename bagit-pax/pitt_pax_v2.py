@@ -738,7 +738,7 @@ if first_step == '1':
                                     directory_list = [
                                         relatedID + ' ' + note.attrib['type'] + ' ' + note.text.split(' ')[0].rstrip(
                                             '.')
-                                        for note in root_element.findall('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}note', nsmap) if
+                                        for note in root_element.findall('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}note[@type]', nsmap) if
                                         note.attrib['type'] == 'series' or note.attrib['type'] == 'subseries' or
                                         note.attrib['type'] == 'otherlevel']
                                     directory_list.append(asset_parent.replace('Bag-', ''))
@@ -855,7 +855,7 @@ if first_step == '1':
                                         relatedID + ' ' + note.attrib['type'] + ' ' + note.text.split(' ')[0].rstrip(
                                             '.')
                                         for note
-                                        in root_element.findall('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}note', nsmap) if
+                                        in root_element.findall('.//{http://www.loc.gov/mods/v3}relatedItem/{http://www.loc.gov/mods/v3}note[@type]', nsmap) if
                                         note.attrib['type'] == 'series' or note.attrib['type'] == 'subseries' or
                                         note.attrib[
                                             'type'] == 'otherlevel']
@@ -940,15 +940,13 @@ if first_step == '1':
                                     for b in os.listdir(r):
                                         x = re.findall(r'METS.\w+', os.path.join(r, b))
                                         if x:
-                                            shutil.copy(os.path.join(r, b),
-                                                    os.path.join(working, collection, os.sep.join(directory_list),
+                                            shutil.copy(os.path.join(r, b), os.path.join(working, collection, 
                                                                  r.split('Bag-')[-1].split(os.sep)[0].replace('.',
                                                                                                               '_') + '_METS' + '.xml'))
                                     for c in os.listdir(r):
                                         x = re.findall(r'TECHMD.\w+', os.path.join(r, c))
                                         if x:
-                                            shutil.copy(os.path.join(r, c),
-                                                    os.path.join(working, collection, os.sep.join(directory_list),
+                                            shutil.copy(os.path.join(r, c), os.path.join(working, collection, 
                                                                  r.split('Bag-')[-1].split(os.sep)[0].replace('.',
                                                                                                               '_') + '_TECHMD' + '.xml'))
             if file.startswith('DC') and root.split(os.sep)[-1].startswith('collection'):
