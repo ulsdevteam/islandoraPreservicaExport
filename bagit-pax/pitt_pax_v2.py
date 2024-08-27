@@ -527,6 +527,7 @@ def fListUploadDirectory():
         print(str(c_f_key) + "  : " + str(c_f_val))
     print(
         "Enter ALL to upload all packages, enter the number of the package to upload (for multiple containers enter number seperated by a comma ex: 1,2,3), or QUIT")
+    #take the first command line argument
     c_f_input = input()
     if c_f_input == "ALL":
         print("send all")
