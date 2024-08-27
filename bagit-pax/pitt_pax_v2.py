@@ -19,7 +19,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 if len(sys.argv) != 3:
     #no parameters given so script with prompt during its run
+    print("running interactive script using pitt.ini")
 else:
+    print("running automatic script using pittautomated.ini")
     first_step = sys.argv(1)
     c_f_input = sys.argv(2)
     send_to_s3 = sys.argv(3) 
