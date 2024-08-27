@@ -630,6 +630,8 @@ def fCheckWorkflowStatus(fc_wf_id):
 
 
 # define ini file
+
+#/home/emv38/islandoraPreservicaExport/bagit-pax/pitt.ini
 config_input = "pitt.ini"
 config = configparser.ConfigParser()
 config.sections()
