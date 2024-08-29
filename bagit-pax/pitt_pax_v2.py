@@ -231,7 +231,7 @@ def fCreateOpexFragment(list_folders_in_dir, list_files_in_dir, LegacyXIP,
         desc_metadata = ET.SubElement(opex_root, opex + 'DescriptiveMetadata')
         if LegacyXIP != "":
             LegacyXIP = ET.SubElement(desc_metadata, 'LegacyXIP', {'xmlns': 'http://preservica.com/LegacyXIP'})
-            access_ref = ET.SubElement(legacyXIP, 'AccessionRef')
+            access_ref = ET.SubElement(LegacyXIP, 'AccessionRef')
             access_ref.text = 'catalog'
         else:
             pass
