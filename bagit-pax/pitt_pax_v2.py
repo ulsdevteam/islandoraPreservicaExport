@@ -20,8 +20,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 if len(sys.argv) != 3:
     #no parameters given so script with prompt during its run
     print("running interactive script using pitt.ini")
+    user_response = input("would you like to enter in the three variabled now? (y/n)")
+    if user_response == 'y':
+        first_step = input("Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers: ")
+        c_f_input = input("Enter ALL to upload all packages, enter the number of the package to upload (for multiple containers enter number seperated by a comma ex: 1,2,3), or QUIT: ")
+        send_to_s3 = input("\nPAXs created and ready for upload. To send data to s3 bucket and begin Preservica ingest enter 1. To stop the process and review packaged content on local device enter 0: ")
+    elif user_response == 'n':
+        print("running script without parameters means input will be required later on")
 else:
-    print("running automatic script using pittautomated.ini")
+    print("running automatic script with parameters provided")
     first_step = sys.argv(1)
     c_f_input = sys.argv(2)
     send_to_s3 = sys.argv(3) 
