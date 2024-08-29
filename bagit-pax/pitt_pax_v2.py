@@ -564,8 +564,11 @@ def fListUploadDirectory():
         print(str(c_f_key) + "  : " + str(c_f_val))
     print(
         "Enter ALL to upload all packages, enter the number of the package to upload (for multiple containers enter number seperated by a comma ex: 1,2,3), or QUIT")
+    
     #take the first command line argument
-    c_f_input = input()
+    if isAutomated is True: print("using ", c_f_input, " as input..")
+    else: c_f_input = input()
+
     if c_f_input == "ALL":
         print("send all")
         sel_type = "All"
@@ -720,8 +723,11 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
 root_logger.addHandler(handler)
 root_logger.info("log file for " + str(os.path.basename(__file__)))
 
-first_step = input(
-    'Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers :: ')
+if isAutomated is True:
+    print("using ", first_step, " as input..")
+else:
+    first_step = input(
+        'Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers :: ')
 
 if first_step == '1':
     sanitize_working_area(masterDir_path, 'Working')
@@ -1066,8 +1072,10 @@ if first_step == '1':
                     "fCreateContainerFolderOpexFragment : opex could not be created " + c_temp_opex_file)
 
     # send files to S3 bucket
-    send_to_s3 = input(
-        '\nPAXs created and ready for upload. To send data to s3 bucket and begin Preservica ingest enter 1. To stop the process and review packaged content on local device enter 0: ')
+    if isAutomated is True: print("Using ", send_to_s3, " as input")
+    else: 
+        send_to_s3 = input(
+            '\nPAXs created and ready for upload. To send data to s3 bucket and begin Preservica ingest enter 1. To stop the process and review packaged content on local device enter 0: ')
 
     if send_to_s3 == '1':
         fListUploadDirectory()
