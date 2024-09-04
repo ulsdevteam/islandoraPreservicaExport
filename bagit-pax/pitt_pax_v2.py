@@ -19,6 +19,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 #boolean to decide whether script will be automatic or not
 isAutomated = False
+global first_step
+global c_f_input
+global send_to_s3
 
 #check three parameters to make sure values are correct
 def checkParameters(first_step, c_f_input, send_to_s3):
@@ -542,6 +545,7 @@ def fUpload_file(file_name, f_no_ext, f_name, f_size, object_name):
 
 
 def fListUploadDirectory():
+    global c_f_input
     c_f_list = []
     dict_containerf = {}
     dict_containerf.clear()
@@ -562,8 +566,7 @@ def fListUploadDirectory():
 
     for c_f_key, c_f_val in dict_containerf.items():
         print(str(c_f_key) + "  : " + str(c_f_val))
-    print(
-        "Enter ALL to upload all packages, enter the number of the package to upload (for multiple containers enter number seperated by a comma ex: 1,2,3), or QUIT")
+    print("Enter ALL to upload all packages, enter the number of the package to upload (for multiple containers enter number seperated by a comma ex: 1,2,3), or QUIT: ")
     
     #take the first command line argument
     if isAutomated is True: print("using ", c_f_input, " as input..")
