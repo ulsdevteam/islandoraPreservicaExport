@@ -17,6 +17,46 @@ import boto3
 import botocore
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+#boolean to decide whether script will be automatic or not
+isAutomated = False
+global first_step
+global c_f_input
+global send_to_s3
+
+#check three parameters to make sure values are correct
+def checkParameters(first_step, c_f_input, send_to_s3):
+    if first_step != "1" and first_step != "2":
+        print("first paramter needs to be 1 or 2")
+        return False
+    if c_f_input != "ALL" and c_f_input != "QUIT" and not c_f_input.isdigit():
+        print("second paramter needs to specify which containers (ALL,1,2,3,QUIT)")
+        return False
+    if send_to_s3 != "1" and send_to_s3 != "0":
+        print("third param needs to be 1 or 0")
+        return False
+    return True
+
+if len(sys.argv) != 4:
+    #no parameters given so script with prompt during its run
+    #comment out later
+    # print("running interactive script using pitt.ini")
+    # user_response = input("would you like to enter in the three variabled now? (y/n)")
+    # if user_response == 'y':
+    #     first_step = input("Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers: ")
+    #     c_f_input = input("Enter ALL to upload all packages, enter the number of the package to upload (for multiple containers enter number seperated by a comma ex: 1,2,3), or QUIT: ")
+    #     send_to_s3 = input("\nTo send data to s3 bucket and begin Preservica ingest enter 1. To stop the process and review packaged content on local device enter 0: ")
+    #     isAutomated = checkParameters(first_step, c_f_input, send_to_s3)
+    #     print(isAutomated)
+    # elif user_response == 'n':
+        print("running script without parameters means input will be required later on")
+else:
+    first_step = sys.argv[1]
+    c_f_input = sys.argv[2]
+    send_to_s3 = sys.argv[3] 
+    isAutomated = checkParameters(first_step, c_f_input, send_to_s3)
+    if isAutomated is True: print("running automatic script with parameters provided")
+    else: print("paramters provided not correct, running interactive script")
+
 class ProgressPercentage(object):
   global prog_val
 
@@ -194,7 +234,7 @@ def fCreateOpexFragment(list_folders_in_dir, list_files_in_dir, LegacyXIP,
         desc_metadata = ET.SubElement(opex_root, opex + 'DescriptiveMetadata')
         if LegacyXIP != "":
             LegacyXIP = ET.SubElement(desc_metadata, 'LegacyXIP', {'xmlns': 'http://preservica.com/LegacyXIP'})
-            access_ref = ET.SubElement(legacyXIP, 'AccessionRef')
+            access_ref = ET.SubElement(LegacyXIP, 'AccessionRef')
             access_ref.text = 'catalog'
         else:
             pass
@@ -505,6 +545,7 @@ def fUpload_file(file_name, f_no_ext, f_name, f_size, object_name):
 
 
 def fListUploadDirectory():
+    global c_f_input
     c_f_list = []
     dict_containerf = {}
     dict_containerf.clear()
@@ -525,9 +566,12 @@ def fListUploadDirectory():
 
     for c_f_key, c_f_val in dict_containerf.items():
         print(str(c_f_key) + "  : " + str(c_f_val))
-    print(
-        "Enter ALL to upload all packages, enter the number of the package to upload (for multiple containers enter number seperated by a comma ex: 1,2,3), or QUIT")
-    c_f_input = input()
+    print("Enter ALL to upload all packages, enter the number of the package to upload (for multiple containers enter number seperated by a comma ex: 1,2,3), or QUIT: ")
+    
+    #take the first command line argument
+    if isAutomated is True: print("using ", c_f_input, " as input..")
+    else: c_f_input = input()
+
     if c_f_input == "ALL":
         print("send all")
         sel_type = "All"
@@ -682,8 +726,11 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(message)s'))
 root_logger.addHandler(handler)
 root_logger.info("log file for " + str(os.path.basename(__file__)))
 
-first_step = input(
-    'Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers :: ')
+if isAutomated is True:
+    print("using ", first_step, " as input..")
+else:
+    first_step = input(
+        'Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers :: ')
 
 if first_step == '1':
     sanitize_working_area(masterDir_path, 'Working')
@@ -1028,8 +1075,10 @@ if first_step == '1':
                     "fCreateContainerFolderOpexFragment : opex could not be created " + c_temp_opex_file)
 
     # send files to S3 bucket
-    send_to_s3 = input(
-        '\nPAXs created and ready for upload. To send data to s3 bucket and begin Preservica ingest enter 1. To stop the process and review packaged content on local device enter 0: ')
+    if isAutomated is True: print("Using ", send_to_s3, " as input")
+    else: 
+        send_to_s3 = input(
+            '\nPAXs created and ready for upload. To send data to s3 bucket and begin Preservica ingest enter 1. To stop the process and review packaged content on local device enter 0: ')
 
     if send_to_s3 == '1':
         fListUploadDirectory()
