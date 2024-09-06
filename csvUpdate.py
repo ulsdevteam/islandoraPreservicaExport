@@ -63,8 +63,8 @@ def find_collection_number(worker_number):
         #print("worker " + worker_number + " assigned to collection " + index)
         return index
     else:
-        print("worker not found")
-        return None
+        #print("worker not found")
+        return "NULL"
 
 # Check if the correct number of arguments is provided
 if len(sys.argv) != 4:

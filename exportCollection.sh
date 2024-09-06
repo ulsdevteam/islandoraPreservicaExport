@@ -15,14 +15,20 @@ export_collection() {
 
     #check if worker is already assigned
     COLLECTION_NUMBER=$(python csvUpdate.py 'workerFind' '4')
-    if [ "$COLLECTION" -eq "$COLLECTION_NUMBER" ]; then 
+    if [ "$COLLECTION_NUMBER" = "NULL" ]; then
+        echo "worker hasn't been assigned "$COLLECTION" yet.. assigning now"
+        python csvUpdate.py "$COLLECTION" 'worker' '4'
+
+        #should already be removed in archive03
+        sudo -u karimay rm /bagit/bags/*
+
+    elif [ "$COLLECTION" = "$COLLECTION_NUMBER" ]; then
         echo "worker 4 is currently in collection $COLLECTION_NUMBER"
+        #check if already ready   
     else
         echo "worker 4 not assigned to collection "$COLLECTION" but to collection "$COLLECTION_NUMBER""
-    fi 
-
-    #should already be removed in archive03
-    #sudo -u karimay rm /bagit/bags/*
+        exit 1
+    fi
 
     #update worker with correct collection
     #python csvUpdate.py "$COLLECTION" "worker" "4"
@@ -32,6 +38,8 @@ export_collection() {
 
     #git pull origin
     ./preservica-mark-exported.sh
+    #update status to Ready
+    python csvUpdate.py $COLLECTION "status" "Ready"
 
 }
 
