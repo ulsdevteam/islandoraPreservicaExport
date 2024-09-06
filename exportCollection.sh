@@ -13,9 +13,19 @@ export_collection() {
     COLLECTION=$1
     echo "collection number = $COLLECTION at $PWD"
 
-    #should already be removed in archive03
-    sudo -u karimay rm /bagit/bags/*
+    #check if worker is already assigned
+    COLLECTION_NUMBER=$(python csvUpdate.py 'workerFind' '4')
+    if [ "$COLLECTION" -eq "$COLLECTION_NUMBER" ]; then 
+        echo "worker 4 is currently in collection $COLLECTION_NUMBER"
+    else
+        echo "worker 4 not assigned to collection "$COLLECTION" but to collection "$COLLECTION_NUMBER""
+    fi 
 
+    #should already be removed in archive03
+    #sudo -u karimay rm /bagit/bags/*
+
+    #update worker with correct collection
+    #python csvUpdate.py "$COLLECTION" "worker" "4"
     sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
 
     sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
@@ -68,3 +78,5 @@ else
         exit 1
     fi
 fi 
+
+
