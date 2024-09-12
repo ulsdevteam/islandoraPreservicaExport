@@ -16,9 +16,7 @@ import os
 # Initialize the dictionary to store changes
 #json?
 CHANGES_FILE='/mounts/transient/automation/changes.json'
-
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
-
 ERROR_LOG='/home/emv38/automationScripts/error.log'
 
 # Initialize the dictionary to store changes
@@ -56,16 +54,24 @@ df.set_index("collection number", drop=False, inplace=True)
 
 #find collection number that worker is at 
 def find_collection_number(worker_number):
-    #print("Searching for worker number: " + worker_number)
     filter = df['worker'] == int(worker_number)
     index = df[filter].first_valid_index()
     if index is not None:
-        #print("worker " + worker_number + " assigned to collection " + index)
         return index
     else:
-        #print("worker not found")
-        return "NULL"
-
+        return None
+    
+#assign collection number to a worker
+def assign_new_collection(worker_number):
+    if (find_collection_number(worker_number)) is None:
+        available_collections = df[(df['Include'] == 1) & ((df['status'] != 'Complete') & (df['status'] != 'LARGE') )]
+        if available_collections.empty:
+            return None
+        new_collection = available_collections.index[0]
+        #df.loc[new_collection, 'worker'] = int(worker_number)
+        return new_collection
+    return None
+    
 # Check if the correct number of arguments is provided
 if len(sys.argv) != 4:
     # Check if the first argument is "display"
@@ -73,19 +79,20 @@ if len(sys.argv) != 4:
         print("Expected: python update_csv.py collection_number column_name value")
         exit(1)
     if sys.argv[1] == "display":
-        #print_all_changes()
         exit(0)
     if sys.argv[1] == "workerFind" and sys.argv[2].isdigit():
-        #print("finding worker " + sys.argv[2] + " and it's collection")
         worker_number=sys.argv[2]
         result = find_collection_number(worker_number)
+        print(result)
+        exit(0)
+    if sys.argv[1] == "workerAssign" and sys.argv[2].isdigit():
+        result = assign_new_collection(sys.argv[2])
         print(result)
         exit(0)
     else:     
         print("Expected: python update_csv.py collection_number column_name value OR display OR assign worker_number")
         exit(1)
 else:
-    # Read parameters from command line
     collection_number = (sys.argv[1])
     col = sys.argv[2]
     function = sys.argv[3]
