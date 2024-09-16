@@ -45,6 +45,7 @@ export_collection() {
 
         #assign new collection to worker
         COLLECTION=$(python3 csvUpdate.py 'workerAssign' $WORKER)
+        update_log "$COLLECTION" "$WORKER" "worker $WORKER assigned to collection $COLLECTION"
 
         #should already be removed in archive03
         #sudo -u karimay rm /bagit/bags/*
@@ -58,16 +59,22 @@ export_collection() {
         exit 1
     fi
 
-    echo "running worker $WORKER with collection $COLLECTION "
+    update_log "$COLLECTION" "$WORKER" "drush starting"
+    echo "running worker $WORKER with collection $COLLECTION"
 
     #update worker with correct collection
     sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
+    update_log "$COLLECTION" "$WORKER" "drush completed"
 
+    update_log "$COLLECTION" "$WORKER" "collecting DC"
     sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
+    update_log "$COLLECTION" "$WORKER" "DC collected"
 
     #git pull origin
     echo "drush completed, beginning export script"
+    update_log "$COLLECTION" "$WORKER" "starting export script"
     ./preservica-mark-exported.sh
+    update_log "$COLLECTION" "$WORKER" "completed export script"
     #update status to Ready
     python3 csvUpdate.py $COLLECTION "status" "Ready"
 
@@ -105,15 +112,14 @@ COLLECTION=$1
 FILE="collection.$COLLECTION.csv"
 if [ -f "$FILE" ]; then
     echo "$FILE exists, beginning ingest script"
-    #mark_ingested "$COLLECTION"
+    mark_ingested "$COLLECTION"
     echo "script completed - removing $FILE now"
-    #rm $FILE
+    rm $FILE
 else
     read -p "start transfer process(1) or exit(0): " USER_INPUT
     if [ "$USER_INPUT" = "1" ]; then
-        echo "transfer process for collection $COLLECTION starting..."
-        update_log "136" "$WORKER" "testing log stuff"
-        #export_collection "$WORKER"
+        echo "transfer process for collection starting..."
+        export_collection "$WORKER"
     else
         echo "exiting..."
         exit 0
