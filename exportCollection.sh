@@ -9,24 +9,39 @@ LOG_DIR='/mounts/transient/automation/logs/'
 ERR_DIR='/mounts/transient/automation/err/'
 
 
-#log file
+#log file update
 # $1 is collection
 # $2 is worker
 # $3 is the message written to file
 update_log() {
     COLLECTION=$1
     WORKER=$2
-    #check if log for that collection already exists
-    LOG_FILE=$(ls $LOG_DIR | grep "^$COLLECTION" )
-    if [ -z $LOG_FILE ]; then
-        echo "log file hasn't been created yet, creating one now"
-        LOG_FILE=$LOG_DIR/$COLLECTION-$WORKER.log
-        touch $LOG_FILE
-    else
-        echo "$LOG_FILE already exists, updating now"
-        MESSAGE="$(date) - "$3""
-        echo $MESSAGE >> "$LOG_DIR"/"$LOG_FILE"
+    MESSAGE=$3
+
+    #is log dir set?
+    if [ -z "$LOG_DIR" ]; then
+        log_error_exit "Log directory not set"
     fi 
+
+    #is there a log dir inside the shared folder?
+    if [ ! -d "$LOG_DIR" ]; then
+        log_error_exit "log directory not found"
+    fi 
+
+    #contruct log file
+    LOG_FILE="$LOG_DIR/$COLLECTION-$WORKER.log"
+
+    #does the log file already exist?
+    if [ ! -f "$LOG_FILE" ]; then
+        echo "log file not found, creating new log"
+        touch "$LOG_FILE"
+    else
+        echo "$LOG_FILE exists, updating.."
+    fi 
+
+    #date variable
+    DATE=$(date)
+    echo "$DATE - $MESSAGE" >> $LOG_FILE
 
 }
 
