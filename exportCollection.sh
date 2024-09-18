@@ -22,9 +22,9 @@ export_collection() {
         COLLECTION=$(python3 csvUpdate.py 'workerAssign' $WORKER)
 
         #should already be removed in archive03
-        #sudo -u karimay rm /bagit/bags/*
+        sudo -u karimay rm /bagit/bags/*
 
-    elif [ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]; then
+    elif [[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]; then
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
 
@@ -33,21 +33,23 @@ export_collection() {
         exit 1
     fi
 
-    echo "running worker $WORKER with collection $COLLECTION "
+    echo "running worker $WORKER with collection $COLLECTION"
 
     #update worker with correct collection
-    # sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
+    #update csv with drush?
+    sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
 
-    # sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
+    sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
 
-    # #git pull origin
-    # ./preservica-mark-exported.sh
-    # #update status to Ready
-    # python3 csvUpdate.py $COLLECTION "status" "Ready"
+    #git pull origin
+    echo "starting export script"
+    ./preservica-mark-exported.sh
+    #update status to Ready
+    python3 csvUpdate.py $COLLECTION "status" "Ready"
 
 }
 
-mark_exported(){
+mark_ingested(){
     COLLECTION=$1
     if [ "$PWD" = "/home/$USER/islandoraPreservicaExport" ]; then
         echo "in correct working directory beginning: ./preservica-mark-ingested.sh collection.$COLLECTION.csv now"
@@ -72,16 +74,16 @@ WORKER="${WORKER#0}"
 #need to have 1 parameter in command line
 if [ -z "$1" ]; then
     echo "currently at worker: $WORKER"
-    echo "since no collection number entered going into ingest script automatically"
+    echo "since no collection number entered going into export process automatically"
 fi
 
 COLLECTION=$1
 FILE="collection.$COLLECTION.csv"
 if [ -f "$FILE" ]; then
     echo "$FILE exists, beginning ingest script"
-    #mark_exported "$COLLECTION"
+    mark_ingested "$COLLECTION"
     echo "script completed - removing $FILE now"
-    #rm $FILE
+    rm $FILE
 else
     read -p "start transfer process(1) or exit(0): " USER_INPUT
     if [ "$USER_INPUT" = "1" ]; then

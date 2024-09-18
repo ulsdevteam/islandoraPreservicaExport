@@ -68,9 +68,26 @@ def assign_new_collection(worker_number):
         if available_collections.empty:
             return None
         new_collection = available_collections.index[0]
-        #df.loc[new_collection, 'worker'] = int(worker_number)
+        df.loc[new_collection, 'worker'] = int(worker_number)
         return new_collection
     return None
+
+def update_csv():
+    #write back to the csv and save the changes made to the json
+    df.to_csv(CSV_FILE, index=False)
+    save_changes(changes)
+
+def track_change(collection, column, value):
+    # Track the change with date
+    today = date.today().strftime("%m/%d/%Y")
+    if today not in changes:
+        changes[today] = []
+    changes[today].append({
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "collection_number": collection,
+        "column": column,
+        "value": value
+    })
     
 # Check if the correct number of arguments is provided
 if len(sys.argv) != 4:
@@ -87,6 +104,8 @@ if len(sys.argv) != 4:
         exit(0)
     if sys.argv[1] == "workerAssign" and sys.argv[2].isdigit():
         result = assign_new_collection(sys.argv[2])
+        track_change(result, 'worker', int(sys.argv[2]))
+        update_csv()
         print(result)
         exit(0)
     else:     
@@ -97,47 +116,26 @@ else:
     col = sys.argv[2]
     function = sys.argv[3]
 
+    if col not in df.columns:
+        print("Error: column entered not found")
+        exit(1)
 
+    if collection_number not in df.index:
+        print("Error: collection number entered not found")
+        print("'{collection_number}' not found within '{df.index}'")
+        exit(1)   
 
-if col not in df.columns:
-    print("Error: column entered not found")
-    exit(1)
+    #update the value if it's worker then it should be a float
+    if col == "worker":
+        df.loc[collection_number, col] = int(function)
+    else:
+        df.loc[collection_number, col] = function
 
-if collection_number not in df.index:
-    print("Error: collection number entered not found")
-    print("'{collection_number}' not found within '{df.index}'")
-    exit(1)   
+    #if process is complete remove the gmworker and update the exportdate for today
+    if function == "Complete":
+        df.loc[collection_number, "worker"] = ""
+        df.loc[collection_number, "exportDate"] = date.today().strftime("%m/%d/%Y")
+    
+    track_change(collection_number, col, function)
+    update_csv()
 
-#update the value if it's worker then it should be a float
-if col == "worker":
-    df.loc[collection_number, col] = int(function)
-else:
-    df.loc[collection_number, col] = function
-
-#if process is complete remove the gmworker and update the exportdate for today
-if function == "Complete":
-    df.loc[collection_number, "worker"] = ""
-    df.loc[collection_number, "exportDate"] = date.today().strftime("%m/%d/%Y")
-
-
-# Track the change with date
-today = date.today().strftime("%m/%d/%Y")
-if today not in changes:
-    changes[today] = []
-changes[today].append({
-    "time": datetime.now().strftime("%H:%M:%S"),
-    "collection_number": collection_number,
-    "column": col,
-    "value": function
-})
-
-#write back to the csv and save the changes made to the json
-df.to_csv(CSV_FILE, index=False)
-save_changes(changes)
-
-
-#function to print changes by specific date?
-
-#function to find where a worker is / which worker is available?
-
-#function to erase all data in json?
