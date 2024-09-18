@@ -3,7 +3,47 @@
 #script to start collection export 
 #./exportCollection.sh "{collection number}"
 
+
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
+LOG_DIR='/mounts/transient/automation/logs/'
+ERR_DIR='/mounts/transient/automation/err/'
+
+
+#log file update
+# $1 is collection
+# $2 is worker
+# $3 is the message written to file
+update_log() {
+    COLLECTION=$1
+    WORKER=$2
+    MESSAGE=$3
+
+    #is log dir set?
+    if [ -z "$LOG_DIR" ]; then
+        log_error_exit "Log directory not set"
+    fi 
+
+    #is there a log dir inside the shared folder?
+    if [ ! -d "$LOG_DIR" ]; then
+        log_error_exit "log directory not found"
+    fi 
+
+    #contruct log file
+    LOG_FILE="$LOG_DIR/$COLLECTION-$WORKER.log"
+
+    #does the log file already exist?
+    if [ ! -f "$LOG_FILE" ]; then
+        echo "log file not found, creating new log"
+        touch "$LOG_FILE"
+    else
+        echo "$LOG_FILE exists, updating.."
+    fi 
+
+    #date variable
+    DATE=$(date)
+    echo "$DATE - $MESSAGE" >> $LOG_FILE
+
+}
 
 #export collection
 #1st parameter is collection number
@@ -20,11 +60,12 @@ export_collection() {
 
         #assign new collection to worker
         COLLECTION=$(python3 csvUpdate.py 'workerAssign' $WORKER)
+        update_log "$COLLECTION" "$WORKER" "worker $WORKER assigned to collection $COLLECTION"
 
         #should already be removed in archive03
         sudo -u karimay rm /bagit/bags/*
 
-    elif [[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]; then
+    elif [[[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]]; then
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
 
@@ -33,17 +74,25 @@ export_collection() {
         exit 1
     fi
 
+    update_log "$COLLECTION" "$WORKER" "drush starting"
     echo "running worker $WORKER with collection $COLLECTION"
 
     #update worker with correct collection
+    sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
+    update_log "$COLLECTION" "$WORKER" "drush completed"
     #update csv with drush?
     sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
 
+    update_log "$COLLECTION" "$WORKER" "collecting DC"
+    sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
+    update_log "$COLLECTION" "$WORKER" "DC collected"
     sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
 
     #git pull origin
-    echo "starting export script"
+    echo "drush completed, beginning export script"
+    update_log "$COLLECTION" "$WORKER" "starting export script"
     ./preservica-mark-exported.sh
+    update_log "$COLLECTION" "$WORKER" "completed export script"
     #update status to Ready
     python3 csvUpdate.py $COLLECTION "status" "Ready"
 
@@ -87,7 +136,7 @@ if [ -f "$FILE" ]; then
 else
     read -p "start transfer process(1) or exit(0): " USER_INPUT
     if [ "$USER_INPUT" = "1" ]; then
-        echo "transfer process for collection $COLLECTION starting..."
+        echo "transfer process for collection starting..."
         export_collection "$WORKER"
     else
         echo "exiting..."

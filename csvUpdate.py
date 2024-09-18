@@ -64,7 +64,10 @@ def find_collection_number(worker_number):
 #assign collection number to a worker
 def assign_new_collection(worker_number):
     if (find_collection_number(worker_number)) is None:
-        available_collections = df[(df['Include'] == 1) & ((df['status'] != 'Complete') & (df['status'] != 'LARGE') )]
+        available_collections = df[(df['Include'].eq(1)) & 
+            ((df['status'].ne('Complete')) & (df['status'].ne('LARGE')) ) &
+            ((df["worker"].eq(0)))
+        ]
         if available_collections.empty:
             return None
         new_collection = available_collections.index[0]
@@ -105,7 +108,7 @@ if len(sys.argv) != 4:
     if sys.argv[1] == "workerAssign" and sys.argv[2].isdigit():
         result = assign_new_collection(sys.argv[2])
         track_change(result, 'worker', int(sys.argv[2]))
-        update_csv()
+        update_csv()       
         print(result)
         exit(0)
     else:     
@@ -135,7 +138,14 @@ else:
     if function == "Complete":
         df.loc[collection_number, "worker"] = ""
         df.loc[collection_number, "exportDate"] = date.today().strftime("%m/%d/%Y")
-    
     track_change(collection_number, col, function)
     update_csv()
+    
 
+
+
+#function to print changes by specific date?
+
+#function to find where a worker is / which worker is available?
+
+#function to erase all data in json?
