@@ -72,6 +72,7 @@ def assign_new_collection(worker_number):
             return None
         new_collection = available_collections.index[0]
         df.loc[new_collection, 'worker'] = int(worker_number)
+        update_value(new_collection, 'worker', worker_number)
         return new_collection
     return None
 
@@ -91,61 +92,82 @@ def track_change(collection, column, value):
         "column": column,
         "value": value
     })
-    
-# Check if the correct number of arguments is provided
-if len(sys.argv) != 4:
-    # Check if the first argument is "display"
-    if len(sys.argv) == 1:
-        print("Expected: python update_csv.py collection_number column_name value")
-        exit(1)
-    if sys.argv[1] == "display":
-        exit(0)
-    if sys.argv[1] == "workerFind" and sys.argv[2].isdigit():
-        worker_number=sys.argv[2]
-        result = find_collection_number(worker_number)
-        print(result)
-        exit(0)
-    if sys.argv[1] == "workerAssign" and sys.argv[2].isdigit():
-        result = assign_new_collection(sys.argv[2])
-        track_change(result, 'worker', int(sys.argv[2]))
-        update_csv()       
-        print(result)
-        exit(0)
-    else:     
-        print("Expected: python update_csv.py collection_number column_name value OR display OR assign worker_number")
-        exit(1)
-else:
-    collection_number = (sys.argv[1])
-    col = sys.argv[2]
-    function = sys.argv[3]
 
-    if col not in df.columns:
+def worker_status(worker):
+    collection = find_collection_number(worker)
+    if collection is None:
+        print("collection number not found for worker "+ worker)
+        exit(1)
+    else:
+        status = df.loc[collection, 'status']
+    return status
+
+# return 1 for updating csv
+# return 2 for worker related commands
+def check_arguments():
+    if len(sys.argv) < 3:
+        print("Not enough parameters")
+        exit(1)
+    if not sys.argv[2].isdigit():
+        print("The second argument must be a digit.")
+        exit(1)
+    print("returning a number now")
+    return 1 if len(sys.argv) == 4 else 2
+
+
+def validate_collection_columns(collection, column):
+    if column not in df.columns:
         print("Error: column entered not found")
         exit(1)
 
-    if collection_number not in df.index:
+    if collection not in df.index:
         print("Error: collection number entered not found")
-        print("'{collection_number}' not found within '{df.index}'")
-        exit(1)   
+        print("'{collection}' not found within '{df.index}'")
+        exit(1) 
 
+def update_value(collection, column, value):
     #update the value if it's worker then it should be a float
-    if col == "worker":
-        df.loc[collection_number, col] = int(function)
+    if column == "worker":
+        df.loc[collection, column] = int(value)
     else:
-        df.loc[collection_number, col] = function
+        df.loc[collection, column] = value
 
     #if process is complete remove the gmworker and update the exportdate for today
-    if function == "Complete":
-        df.loc[collection_number, "worker"] = ""
-        df.loc[collection_number, "exportDate"] = date.today().strftime("%m/%d/%Y")
-    track_change(collection_number, col, function)
+    if value == "Complete":
+        df.loc[collection, "worker"] = ""
+        df.loc[collection, "exportDate"] = date.today().strftime("%m/%d/%Y")
+    track_change(collection, column, value)
     update_csv()
     
 
+def main():
+    #main script where all the helper functions start
+    check = check_arguments()
+
+    if check == 1:
+        #updating the csv
+        collection_number = (sys.argv[1])
+        column = sys.argv[2]
+        value = sys.argv[3]
+        validate_collection_columns(collection_number, column)
+        update_value(collection_number, column, value)
+
+    if check == 2:
+        #worker related commands
+        command = sys.argv[1]
+        worker = sys.argv[2]
+        if command == "workerStatus":
+            print("worker status checking now")
+            result = worker_status(worker)
+        elif command == "workerFind":
+            result = find_collection_number(worker)
+        elif command == "workerAssign":
+            result = assign_new_collection(worker)
+        else:
+            print("error reading command")
+            exit(1)
+        print(str(result))
 
 
-#function to print changes by specific date?
-
-#function to find where a worker is / which worker is available?
-
-#function to erase all data in json?
+#start main
+main()
