@@ -111,7 +111,6 @@ def check_arguments():
     if not sys.argv[2].isdigit():
         print("The second argument must be a digit.")
         exit(1)
-    print("returning a number now")
     return 1 if len(sys.argv) == 4 else 2
 
 
@@ -157,7 +156,6 @@ def main():
         command = sys.argv[1]
         worker = sys.argv[2]
         if command == "workerStatus":
-            print("worker status checking now")
             result = worker_status(worker)
         elif command == "workerFind":
             result = find_collection_number(worker)

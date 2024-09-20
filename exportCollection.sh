@@ -45,6 +45,11 @@ update_log() {
 
 }
 
+update_csv(){
+    #update the csv file and also the log file attached to the item
+    return
+}
+
 #export collection
 #1st parameter is collection number
 #2nd parameter is worker number
@@ -68,6 +73,8 @@ export_collection() {
     elif [[[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]]; then
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
+        #check what stage it is at 
+        TRANFER_STATUS=$(python3 csvUpdate.py 'workerStatus' $WORKER)
 
     else
         echo "worker $WORKER not assigned to collection "$COLLECTION" but to collection "$CHECK_COLLECTION""
@@ -80,15 +87,13 @@ export_collection() {
     #update worker with correct collection
     sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
     update_log "$COLLECTION" "$WORKER" "drush completed"
-    #update csv with drush?
-    sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
+    
 
     update_log "$COLLECTION" "$WORKER" "collecting DC"
     sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
     update_log "$COLLECTION" "$WORKER" "DC collected"
-    sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
-
-    #git pull origin
+    
+    
     echo "drush completed, beginning export script"
     update_log "$COLLECTION" "$WORKER" "starting export script"
     ./preservica-mark-exported.sh
