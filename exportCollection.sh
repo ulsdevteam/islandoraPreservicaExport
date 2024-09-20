@@ -4,7 +4,7 @@
 #./exportCollection.sh "{collection number}"
 
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
-LOG_DIR='/mounts/transient/automation/logs/'
+LOG_DIR='/mounts/transient/automation/logs'
 ERR_DIR='/mounts/transient/automation/err/'
 
 #log file update
@@ -90,21 +90,12 @@ export_collection() {
     CHECK_COLLECTION=$(python3 csvUpdate.py 'workerFind' $WORKER)
     echo "result of check collection: $CHECK_COLLECTION"
     if [ "$CHECK_COLLECTION" = "None" ]; then
-        echo "worker hasn't been assigned to a collection yet.. assigning now"
-
-        #assign new collection to worker
-        # COLLECTION=$(python3 csvUpdate.py 'workerAssign' $WORKER)
-        # update_log "$COLLECTION" "$WORKER" "worker $WORKER assigned to collection $COLLECTION"
-
-        # #should already be removed in archive03
-        # sudo -u karimay rm /bagit/bags/*
-
-    elif [[[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]]; then
+        echo "worker hasn't been assigned to a collection yet.. run archive03"
+    elif [[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]; then
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
         #check what stage it is at 
         TRANSFER_STATUS=$(python3 csvUpdate.py 'workerStatus' $WORKER)
-
     else
         echo "worker $WORKER not assigned to collection "$COLLECTION" but to collection "$CHECK_COLLECTION""
         exit 1
@@ -122,7 +113,10 @@ export_collection() {
         exportScript)
             echo "calling export script"
             export_script "$COLLECTION" "$WORKER"
-            ;&
+            ;;
+        Ready)
+            echo "collection is ready for archive"
+            ;;
         *)
             echo "error"
             exit 1

@@ -108,9 +108,9 @@ def check_arguments():
     if len(sys.argv) < 3:
         print("Not enough parameters")
         exit(1)
-    if not sys.argv[2].isdigit():
-        print("The second argument must be a digit.")
-        exit(1)
+    # if not sys.argv[2].isdigit():
+    #     print("The second argument must be a digit.")
+    #     exit(1)
     return 1 if len(sys.argv) == 4 else 2
 
 
