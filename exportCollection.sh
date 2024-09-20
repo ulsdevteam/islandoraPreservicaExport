@@ -3,11 +3,9 @@
 #script to start collection export 
 #./exportCollection.sh "{collection number}"
 
-
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
 LOG_DIR='/mounts/transient/automation/logs/'
 ERR_DIR='/mounts/transient/automation/err/'
-
 
 #log file update
 # $1 is collection
@@ -45,9 +43,40 @@ update_log() {
 
 }
 
-update_csv(){
-    #update the csv file and also the log file attached to the item
-    return
+# $1 is collection
+# $2 is worker
+bagit_creation(){
+    COLLECTION=$1
+    WORKER=$2
+    update_log "$COLLECTION" "$WORKER" "drush starting"
+    python3 csvUpdate.py "$COLLECTION" 'status' 'bagit'
+    sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
+    update_log "$COLLECTION" "$WORKER" "drush completed"
+}
+
+# $1 is collection
+# $2 is worker
+DC_creation(){
+    COLLECTION=$1
+    WORKER=$2
+    update_log "$COLLECTION" "$WORKER" "DC starting"
+    python3 csvUpdate.py "$COLLECTION" 'status' 'DC'
+    sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
+    update_log "$COLLECTION" "$WORKER" "DC collected"
+}
+
+
+# $1 is collection
+# $2 is worker
+export_script(){
+    COLLECTION=$1
+    WORKER=$2
+    update_log "$COLLECTION" "$WORKER" "export script starting"
+    python3 csvUpdate.py "$COLLECTION" "status" "exportScript"
+    ./preservica-mark-exported.sh
+    update_log "$COLLECTION" "$WORKER" "completed export script"
+    #update status to Ready
+    python3 csvUpdate.py $COLLECTION "status" "Ready"
 }
 
 #export collection
@@ -64,44 +93,44 @@ export_collection() {
         echo "worker hasn't been assigned to a collection yet.. assigning now"
 
         #assign new collection to worker
-        COLLECTION=$(python3 csvUpdate.py 'workerAssign' $WORKER)
-        update_log "$COLLECTION" "$WORKER" "worker $WORKER assigned to collection $COLLECTION"
+        # COLLECTION=$(python3 csvUpdate.py 'workerAssign' $WORKER)
+        # update_log "$COLLECTION" "$WORKER" "worker $WORKER assigned to collection $COLLECTION"
 
-        #should already be removed in archive03
-        sudo -u karimay rm /bagit/bags/*
+        # #should already be removed in archive03
+        # sudo -u karimay rm /bagit/bags/*
 
     elif [[[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]]; then
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
         #check what stage it is at 
-        TRANFER_STATUS=$(python3 csvUpdate.py 'workerStatus' $WORKER)
+        TRANSFER_STATUS=$(python3 csvUpdate.py 'workerStatus' $WORKER)
 
     else
         echo "worker $WORKER not assigned to collection "$COLLECTION" but to collection "$CHECK_COLLECTION""
         exit 1
     fi
 
-    update_log "$COLLECTION" "$WORKER" "drush starting"
-    echo "running worker $WORKER with collection $COLLECTION"
-
-    #update worker with correct collection
-    sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
-    update_log "$COLLECTION" "$WORKER" "drush completed"
-    
-
-    update_log "$COLLECTION" "$WORKER" "collecting DC"
-    sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
-    update_log "$COLLECTION" "$WORKER" "DC collected"
-    
-    
-    echo "drush completed, beginning export script"
-    update_log "$COLLECTION" "$WORKER" "starting export script"
-    ./preservica-mark-exported.sh
-    update_log "$COLLECTION" "$WORKER" "completed export script"
-    #update status to Ready
-    python3 csvUpdate.py $COLLECTION "status" "Ready"
+    case $TRANSFER_STATUS in
+        bagit | nan)
+            echo "in bagit creation stage"
+            bagit_creation "$COLLECTION" "$WORKER"
+            ;&
+        DC)
+            echo "restarting DC stage"
+            DC_creation "$COLLECTION" "$WORKER"
+            ;&
+        exportScript)
+            echo "calling export script"
+            export_script "$COLLECTION" "$WORKER"
+            ;&
+        *)
+            echo "error"
+            exit 1
+            ;;
+    esac
 
 }
+
 
 mark_ingested(){
     COLLECTION=$1
