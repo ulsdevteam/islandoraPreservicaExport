@@ -16,12 +16,29 @@ LOCK_FILE='$PWD/lock/export.lock'
 #create a lock file for cron jobs
 
 #lockfile generation
-#tolock: lockfile location
-#action: number or error code
+if [ -f "$LOCK_FILE" ]; then
+    #read PID
+    LOCKED_PID=$(cat "$LOCK_FILE")
 
-Lock() {
-    return
+    #is process still running?
+    if ps -p "$LOCKED_PID"; then
+        echo "script currently running with PID: $LOCKED_PID, exiting"
+        exit 0
+    else
+        echo "old lock file, removing"
+        rm -f "$LOCK_FILE"
+    fi 
+fi
+
+#create lock file with current PID
+echo "$$" >> $LOCK_FILE
+
+#unlock on exit
+unlock() {
+    rm -f "$LOCK_FILE"
 }
+trap unlock EXIT
+
 
 #log file update
 # $1 is collection
@@ -107,6 +124,7 @@ export_collection() {
     echo "result of check collection: $CHECK_COLLECTION"
     if [ "$CHECK_COLLECTION" = "None" ]; then
         echo "worker hasn't been assigned to a collection yet.. run archive03"
+        exit 1
     elif [[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]; then
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
