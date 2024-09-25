@@ -6,6 +6,7 @@ import sys
 import csv
 import json 
 import os
+import portalocker
 
 #----------------------------------------------------------------------------------------#
 #csv is set up such that:
@@ -15,9 +16,10 @@ import os
 #----------------------------------------------------------------------------------------#
 # Initialize the dictionary to store changes
 #json?
-CHANGES_FILE='/mounts/transient/automation/changes.json'
-CSV_FILE='/mounts/transient/automation/reformatted.csv'
-ERROR_LOG='/home/emv38/automationScripts/error.log'
+CHANGES_FILE = '/mounts/transient/automation/changes.json'
+CSV_FILE = '/mounts/transient/automation/reformatted.csv'
+ERROR_LOG = '/home/emv38/automationScripts/error.log'
+LOCK_FILE = '/mounts/transient/automation/lockfile.lock'
 
 # Initialize the dictionary to store changes
 def load_changes():
@@ -140,32 +142,38 @@ def update_value(collection, column, value):
     
 
 def main():
-    #main script where all the helper functions start
-    check = check_arguments()
 
-    if check == 1:
-        #updating the csv
-        collection_number = (sys.argv[1])
-        column = sys.argv[2]
-        value = sys.argv[3]
-        validate_collection_columns(collection_number, column)
-        update_value(collection_number, column, value)
+    #maybe shared lock for reading?
+    with open(LOCK_FILE, 'w') as lock_file:
+        portalocker.lock(lock_file, portalocker.LOCK_EX)
 
-    if check == 2:
-        #worker related commands
-        command = sys.argv[1]
-        worker = sys.argv[2]
-        if command == "workerStatus":
-            result = worker_status(worker)
-        elif command == "workerFind":
-            result = find_collection_number(worker)
-        elif command == "workerAssign":
-            result = assign_new_collection(worker)
-        else:
-            print("error reading command")
-            exit(1)
-        print(str(result))
+        #main script where all the helper functions start
+        check = check_arguments()
+
+        if check == 1:
+            #updating the csv
+            collection_number = (sys.argv[1])
+            column = sys.argv[2]
+            value = sys.argv[3]
+            validate_collection_columns(collection_number, column)
+            update_value(collection_number, column, value)
+
+        if check == 2:
+            #worker related commands
+            command = sys.argv[1]
+            worker = sys.argv[2]
+            if command == "workerStatus":
+                result = worker_status(worker)
+            elif command == "workerFind":
+                result = find_collection_number(worker)
+            elif command == "workerAssign":
+                result = assign_new_collection(worker)
+            else:
+                print("error reading command")
+                exit(1)
+            print(str(result))
 
 
 #start main
-main()
+if __name__ == "__main__":
+    main()
