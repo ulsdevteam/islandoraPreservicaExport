@@ -195,6 +195,9 @@ else
     if [ "$USER_INPUT" = "1" ]; then
         echo "transfer process for collection starting..."
         export_collection "$WORKER"
+        #completed, send email ?
+        DATE=$(date)
+        echo "worker $WORKER finished exportCollection at $DATE" | mail -s "pa-gmworker0$WORKER exportCollection.sh COMPLETE" emv38@pitt.edu
     else
         echo "exiting..."
         exit 0
