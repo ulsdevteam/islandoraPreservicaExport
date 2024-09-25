@@ -3,9 +3,25 @@
 #script to start collection export 
 #./exportCollection.sh "{collection number}"
 
+#getting worker number
+WORKER="${HOSTNAME##*-}"
+WORKER="${WORKER%%.*}"
+WORKER="${WORKER#0}" 
+
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
 LOG_DIR='/mounts/transient/automation/logs'
 ERR_DIR='/mounts/transient/automation/err/'
+LOCK_FILE='$PWD/lock/export.lock'
+
+#create a lock file for cron jobs
+
+#lockfile generation
+#tolock: lockfile location
+#action: number or error code
+
+Lock() {
+    return
+}
 
 #log file update
 # $1 is collection
@@ -141,11 +157,6 @@ mark_ingested(){
 
 #main script
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-#getting worker number
-WORKER="${HOSTNAME##*-}"
-WORKER="${WORKER%%.*}"
-WORKER="${WORKER#0}" 
 
 
 #need to have 1 parameter in command line
