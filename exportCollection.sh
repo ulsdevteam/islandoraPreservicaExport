@@ -150,6 +150,7 @@ export_collection() {
             ;;
         Ready)
             echo "collection is ready for archive"
+            exit 0
             ;;
         *)
             echo "error"
