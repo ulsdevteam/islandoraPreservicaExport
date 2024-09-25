@@ -11,7 +11,7 @@ WORKER="${WORKER#0}"
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
 LOG_DIR='/mounts/transient/automation/logs'
 ERR_DIR='/mounts/transient/automation/err/'
-LOCK_FILE='$PWD/lock/export.lock'
+LOCK_FILE="$PWD/lock/export.lock"
 
 #create a lock file for cron jobs
 
@@ -31,7 +31,7 @@ if [ -f "$LOCK_FILE" ]; then
 fi
 
 #create lock file with current PID
-echo "$$" >> $LOCK_FILE
+echo "$$" > $LOCK_FILE
 
 #unlock on exit
 unlock() {
