@@ -36,19 +36,7 @@ def checkParameters(first_step, c_f_input, send_to_s3):
         return False
     return True
 
-if len(sys.argv) != 4:
-    #no parameters given so script with prompt during its run
-    #comment out later
-    # print("running interactive script using pitt.ini")
-    # user_response = input("would you like to enter in the three variabled now? (y/n)")
-    # if user_response == 'y':
-    #     first_step = input("Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers: ")
-    #     c_f_input = input("Enter ALL to upload all packages, enter the number of the package to upload (for multiple containers enter number seperated by a comma ex: 1,2,3), or QUIT: ")
-    #     send_to_s3 = input("\nTo send data to s3 bucket and begin Preservica ingest enter 1. To stop the process and review packaged content on local device enter 0: ")
-    #     isAutomated = checkParameters(first_step, c_f_input, send_to_s3)
-    #     print(isAutomated)
-    # elif user_response == 'n':
-        print("running script without parameters means input will be required later on")
+if len(sys.argv) != 4: print("running script without parameters means input will be required later on")
 else:
     first_step = sys.argv[1]
     c_f_input = sys.argv[2]
