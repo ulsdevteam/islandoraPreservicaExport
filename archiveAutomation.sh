@@ -3,7 +3,7 @@
 ERROR_DIR='/mounts/transient/automation/err/'
 #ERRORLOG=~/"automationScripts/error.log"
 LOG_DIR='/mounts/transient/automation/logs/'
-LOCK_FILE=~/"automationScripts/lock/archive03.lock"
+LOCK_FILE="/mounts/transient/automation/lock/archive03.lock"
 
 
 #lockfile generation
