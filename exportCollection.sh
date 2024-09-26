@@ -168,7 +168,7 @@ export_collection() {
 
     #check if worker is already assigned
     CHECK_COLLECTION=$(python3 csvUpdate.py 'workerFind' $WORKER)
-    echo "result of check collection: $CHECK_COLLECTION"
+    #echo "result of check collection: $CHECK_COLLECTION"
     if [ "$CHECK_COLLECTION" = "None" ]; then
         echo "worker hasn't been assigned to a collection yet.. run archive03"
         exit 0
