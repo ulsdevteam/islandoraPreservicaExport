@@ -11,7 +11,7 @@ WORKER="${WORKER#0}"
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
 LOG_DIR='/mounts/transient/automation/logs'
 ERROR_DIR='/mounts/transient/automation/err/'
-LOCK_FILE="$PWD/lock/export.lock"
+LOCK_FILE="/mounts/transient/automation/lock/worker'$WORKER'export.lock"
 
 #create a lock file for cron jobs
 
