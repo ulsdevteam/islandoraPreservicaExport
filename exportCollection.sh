@@ -10,7 +10,7 @@ WORKER="${WORKER#0}"
 
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
 LOG_DIR='/mounts/transient/automation/logs'
-ERR_DIR='/mounts/transient/automation/err/'
+ERROR_DIR='/mounts/transient/automation/err/'
 LOCK_FILE="$PWD/lock/export.lock"
 
 #create a lock file for cron jobs
@@ -38,6 +38,44 @@ unlock() {
     rm -f "$LOCK_FILE"
 }
 trap unlock EXIT
+
+# $1 is the message
+update_err() {
+
+    if [ -z "$ERROR_DIR" ]; then
+        echo "err directory not set"
+        exit 1
+    fi
+
+    if [ ! -d "$ERROR_DIR" ]; then
+        echo "directory not found"
+        exit 1
+    fi 
+
+    #contruct err file
+    CURR_DAY=$(date +"%m-%d-%Y")
+    ERROR_FILE="$ERROR_DIR/$CURR_DAY-$HOSTNAME-err.log"
+
+    #does the log file already exist?
+    if [ ! -f "$ERROR_FILE" ]; then
+        echo "log file not found, creating new log"
+        touch "$ERROR_FILE"
+    else
+        echo "$ERROR_FILE exists, updating.."
+    fi
+    DATE=$(date)
+    echo "$DATE: $1" >> $ERROR_FILE
+}
+
+log_error_exit() {
+    update_err "$1"
+    exit 1
+}
+
+log_error() {
+    update_err "$1"
+    echo "error.log updated with: $1"
+}
 
 
 #log file update
@@ -69,7 +107,6 @@ update_log() {
     else
         echo "$LOG_FILE exists, updating.."
     fi 
-
     #date variable
     DATE=$(date)
     echo "$DATE - $MESSAGE" >> $LOG_FILE
@@ -81,10 +118,13 @@ update_log() {
 bagit_creation(){
     COLLECTION=$1
     WORKER=$2
-    update_log "$COLLECTION" "$WORKER" "drush starting"
+    update_log "$COLLECTION" "$WORKER" "bagit creation starting"
     python3 csvUpdate.py "$COLLECTION" 'status' 'bagit'
     sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
-    update_log "$COLLECTION" "$WORKER" "drush completed"
+    if [ $? -ne 0 ]; then
+        log_error_exit "error running bagit script"
+    fi  
+    update_log "$COLLECTION" "$WORKER" "bagit completed"
 }
 
 # $1 is collection
@@ -95,6 +135,9 @@ DC_creation(){
     update_log "$COLLECTION" "$WORKER" "DC starting"
     python3 csvUpdate.py "$COLLECTION" 'status' 'DC'
     sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
+    if [ $? -ne 0 ]; then
+        log_error_exit "error finding DC.xml"
+    fi
     update_log "$COLLECTION" "$WORKER" "DC collected"
 }
 
@@ -106,7 +149,11 @@ export_script(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "export script starting"
     python3 csvUpdate.py "$COLLECTION" "status" "exportScript"
+
     ./preservica-mark-exported.sh
+    if [ $? -ne 0 ]; then
+        log_error_exit "error running export script"
+    fi 
     update_log "$COLLECTION" "$WORKER" "completed export script"
     #update status to Ready
     python3 csvUpdate.py $COLLECTION "status" "Ready"
@@ -124,15 +171,14 @@ export_collection() {
     echo "result of check collection: $CHECK_COLLECTION"
     if [ "$CHECK_COLLECTION" = "None" ]; then
         echo "worker hasn't been assigned to a collection yet.. run archive03"
-        exit 1
+        exit 0
     elif [[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]; then
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
         #check what stage it is at 
         TRANSFER_STATUS=$(python3 csvUpdate.py 'workerStatus' $WORKER)
     else
-        echo "worker $WORKER not assigned to collection "$COLLECTION" but to collection "$CHECK_COLLECTION""
-        exit 1
+        log_error_exit "unexpected error finding collection number for worker $WORKER"
     fi
 
     case $TRANSFER_STATUS in
@@ -153,8 +199,7 @@ export_collection() {
             exit 0
             ;;
         *)
-            echo "error"
-            exit 1
+            log_error_exit "unknown status found for collection $COLLECTION in worker $WORKER"
             ;;
     esac
 
@@ -168,8 +213,7 @@ mark_ingested(){
         ./preservica-mark-ingested.sh collection.$COLLECTION.csv
         #begin transfer of new collection
     else
-        echo "not in correct working directory"
-        exit 1
+        log_error_exit "not in correct working directory"
     fi 
 }
 
@@ -196,13 +240,9 @@ else
     if [ "$USER_INPUT" = "1" ]; then
         echo "transfer process for collection starting..."
         export_collection "$WORKER"
-        #completed, send email ?
-        DATE=$(date)
-        echo "worker $WORKER finished exportCollection at $DATE" | mail -s "pa-gmworker0$WORKER exportCollection.sh COMPLETE" emv38@pitt.edu
+        exit 0
     else
         echo "exiting..."
         exit 0
     fi
 fi 
-
-
