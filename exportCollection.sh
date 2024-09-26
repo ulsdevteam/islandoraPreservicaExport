@@ -10,7 +10,7 @@ WORKER="${WORKER#0}"
 
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
 LOG_DIR='/mounts/transient/automation/logs'
-ERR_DIR='/mounts/transient/automation/err/'
+ERROR_DIR='/mounts/transient/automation/err/'
 LOCK_FILE="$PWD/lock/export.lock"
 
 #create a lock file for cron jobs
@@ -38,6 +38,44 @@ unlock() {
     rm -f "$LOCK_FILE"
 }
 trap unlock EXIT
+
+# $1 is the message
+update_err() {
+
+    if [ -z "$ERROR_DIR" ]; then
+        echo "err directory not set"
+        exit 1
+    fi
+
+    if [ ! -d "$ERROR_DIR" ]; then
+        echo "directory not found"
+        exit 1
+    fi 
+
+    #contruct err file
+    CURR_DAY=$(date +"%m-%d-%Y")
+    ERROR_FILE="$ERROR_DIR/$CURR_DAY-$HOSTNAME-err.log"
+
+    #does the log file already exist?
+    if [ ! -f "$ERROR_FILE" ]; then
+        echo "log file not found, creating new log"
+        touch "$ERROR_FILE"
+    else
+        echo "$ERROR_FILE exists, updating.."
+    fi
+    DATE=$(date)
+    echo "$DATE: $1" >> $ERROR_FILE
+}
+
+log_error_exit() {
+    update_err "$1"
+    exit 1
+}
+
+log_error() {
+    update_err "$1"
+    echo "error.log updated with: $1"
+}
 
 
 #log file update
@@ -121,7 +159,7 @@ export_collection() {
 
     #check if worker is already assigned
     CHECK_COLLECTION=$(python3 csvUpdate.py 'workerFind' $WORKER)
-    echo "result of check collection: $CHECK_COLLECTION"
+    
     if [ "$CHECK_COLLECTION" = "None" ]; then
         echo "worker hasn't been assigned to a collection yet.. run archive03"
         exit 1
@@ -198,7 +236,7 @@ else
         export_collection "$WORKER"
         #completed, send email ?
         DATE=$(date)
-        echo "worker $WORKER finished exportCollection at $DATE" | mail -s "pa-gmworker0$WORKER exportCollection.sh COMPLETE" emv38@pitt.edu
+        mail -s "pa-gmworker0$WORKER exportCollection.sh COMPLETE" emv38@pitt.edu <<< "worker $WORKER finished exportCollection at $DATE"
     else
         echo "exiting..."
         exit 0
