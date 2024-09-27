@@ -97,9 +97,7 @@ def track_change(collection, column, value):
 
 def worker_status(worker):
     collection = find_collection_number(worker)
-    if collection is None:
-        print("collection number not found for worker "+ worker)
-        exit(1)
+    if collection is None: return None
     else:
         status = df.loc[collection, 'status']
     return status

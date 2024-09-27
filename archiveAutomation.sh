@@ -110,7 +110,7 @@ check_worker_status() {
  
     worker_directory="/mounts/transient/pa-gmworker-0$1/bags/"
     STATUS=$(python csvUpdate.py "workerStatus" "$1")
-
+    #echo "status: $STATUS"
     if [ "$STATUS" = "Ready" ]; then
         if [ "$(ls $worker_directory | grep DC.xml)" ]; then
             return 0;
@@ -118,7 +118,7 @@ check_worker_status() {
             log_error_exit "issue finding DC.xml within $worker_directory"
         fi
     elif [ "$STATUS" = "None" ]; then
-        echo "status of worker $1 is None meaning it's ready for a new collection"
+        #echo "status of worker $1 is None meaning it's ready for a new collection"
         return 2;
     else
         #echo "gmworker-0$1 still transferring.."
