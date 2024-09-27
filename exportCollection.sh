@@ -11,7 +11,7 @@ WORKER="${WORKER#0}"
 CSV_FILE='/mounts/transient/automation/reformatted.csv'
 LOG_DIR='/mounts/transient/automation/logs'
 ERROR_DIR='/mounts/transient/automation/err/'
-LOCK_FILE="$PWD/lock/export.lock"
+LOCK_FILE="/mounts/transient/automation/lock/"$WORKER"export.lock"
 
 #create a lock file for cron jobs
 
@@ -121,7 +121,12 @@ bagit_creation(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "drush starting"
     python3 csvUpdate.py "$COLLECTION" 'status' 'bagit'
-    sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
+    #sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
+    drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
+    if [ $? -ne 0 ]; then
+        python3 csvUpdate.py "$COLLECTION" 'status' 'ERROR'
+        log_error_exit "error running bagit drush command"  
+    fi 
     update_log "$COLLECTION" "$WORKER" "drush completed"
 }
 
@@ -132,7 +137,12 @@ DC_creation(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "DC starting"
     python3 csvUpdate.py "$COLLECTION" 'status' 'DC'
-    sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
+    #sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
+    wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
+    if [ $? -ne 0 ]; then
+        python3 csvUpdate.py "$COLLECTION" 'status' 'ERROR'
+        log_error_exit "error running DC command"
+    fi 
     update_log "$COLLECTION" "$WORKER" "DC collected"
 }
 
@@ -144,7 +154,12 @@ export_script(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "export script starting"
     python3 csvUpdate.py "$COLLECTION" "status" "exportScript"
-    ./preservica-mark-exported.sh
+    SCRIPT_OUTPUT="$(./preservica-mark-exported.sh 2>&1)"
+    if [ $? -ne 0 ]; then
+        python3 csvUpdate.py $COLLECTION "status" "ERROR"
+        log_error_exit "mark exported script errored out: $SCRIPT_OUTPUT"
+    fi 
+    #./preservica-mark-exported.sh
     update_log "$COLLECTION" "$WORKER" "completed export script"
     #update status to Ready
     python3 csvUpdate.py $COLLECTION "status" "Ready"
@@ -169,11 +184,15 @@ export_collection() {
         #check what stage it is at 
         TRANSFER_STATUS=$(python3 csvUpdate.py 'workerStatus' $WORKER)
     else
-        echo "worker $WORKER not assigned to collection "$COLLECTION" but to collection "$CHECK_COLLECTION""
-        exit 1
+        log_error_exit "error finding collection number for worker $WORKER"
     fi
 
     case $TRANSFER_STATUS in
+
+        ERROR)
+            echo "refreshing worker to start"
+            refresh_worker "$COLLECTION" "$WORKER"
+            ;&
         bagit | nan)
             echo "in bagit creation stage"
             bagit_creation "$COLLECTION" "$WORKER"
@@ -191,8 +210,7 @@ export_collection() {
             exit 0
             ;;
         *)
-            echo "error"
-            exit 1
+            log_error_exit "unknown status found for worker $WORKER in collection $COLLECTION"
             ;;
     esac
 
@@ -209,6 +227,15 @@ mark_ingested(){
         echo "not in correct working directory"
         exit 1
     fi 
+}
+
+#restart worker by removing all files and changing status back to nan
+refresh_worker() {
+    COLLECTION=$1
+    WORKER=$2
+    #sudo -u karimay rm -rf /bagit/bags/*
+    rm -rf /bagit/bags/* || log_error_exit "error trying to remove content of bags/ directory"
+    python3 csvUpdate.py $COLLECTION "status" ""
 }
 
 
