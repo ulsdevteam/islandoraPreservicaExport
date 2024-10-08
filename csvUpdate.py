@@ -3,10 +3,14 @@ from curses.ascii import isdigit
 import pandas as pd 
 from datetime import date, datetime
 import sys
-import csv
 import json 
 import os
-import portalocker
+#import portalocker
+from filelock import FileLock, Timeout
+# import fcntl
+# import threading
+
+
 
 #----------------------------------------------------------------------------------------#
 #csv is set up such that:
@@ -19,7 +23,7 @@ import portalocker
 CHANGES_FILE = '/mounts/transient/automation/changes.json'
 CSV_FILE = '/mounts/transient/automation/reformatted.csv'
 ERROR_LOG = '/home/emv38/automationScripts/error.log'
-LOCK_FILE = '/mounts/transient/automation/lockfile.lock'
+LOCK_FILE = '/mounts/transient/automation/csvlockfile.lock'
 
 # Initialize the dictionary to store changes
 def load_changes():
@@ -128,50 +132,57 @@ def validate_collection_columns(collection, column):
 
 def update_value(collection, column, value):
     #update the value if it's worker then it should be a float
-    if column == "worker":
-        df.loc[collection, column] = int(value)
-    else:
-        df.loc[collection, column] = value
+    lock = FileLock(LOCK_FILE)
+    try:
+            # Try to acquire the lock with a timeout
+            with lock.acquire(timeout=10):  # Wait for up to 10 seconds for the lock
+                # Writing to the CSV file
+                if column == "worker":
+                    df.loc[collection, column] = int(value)
+                else:
+                    df.loc[collection, column] = value
 
-    #if process is complete remove the gmworker and update the exportdate for today
-    if value == "Complete":
-        df.loc[collection, "worker"] = ""
-        df.loc[collection, "exportDate"] = date.today().strftime("%m/%d/%Y")
-    track_change(collection, column, value)
-    update_csv()
-    
+                #if process is complete remove the gmworker and update the exportdate for today
+                if value == "Complete":
+                    df.loc[collection, "worker"] = ""
+                    df.loc[collection, "exportDate"] = date.today().strftime("%m/%d/%Y")
+                track_change(collection, column, value)
+                update_csv()
+    except Timeout:
+        print("Could not acquire lock, another process is writing to the file.")
+
 
 def main():
 
-    #maybe shared lock for reading?
-    with open(LOCK_FILE, 'w') as lock_file:
-        portalocker.lock(lock_file, portalocker.LOCK_EX)
+    # #maybe shared lock for reading?
+    # with open(LOCK_FILE, 'w') as lock_file:
+    #     portalocker.lock(lock_file, portalocker.LOCK_EX)
 
-        #main script where all the helper functions start
-        check = check_arguments()
+    #main script where all the helper functions start
+    check = check_arguments()
 
-        if check == 1:
-            #updating the csv
-            collection_number = (sys.argv[1])
-            column = sys.argv[2]
-            value = sys.argv[3]
-            validate_collection_columns(collection_number, column)
-            update_value(collection_number, column, value)
+    if check == 1:
+        #updating the csv
+        collection_number = (sys.argv[1])
+        column = sys.argv[2]
+        value = sys.argv[3]
+        validate_collection_columns(collection_number, column)
+        update_value(collection_number, column, value)
 
-        if check == 2:
-            #worker related commands
-            command = sys.argv[1]
-            worker = sys.argv[2]
-            if command == "workerStatus":
-                result = worker_status(worker)
-            elif command == "workerFind":
-                result = find_collection_number(worker)
-            elif command == "workerAssign":
-                result = assign_new_collection(worker)
-            else:
-                print("error reading command")
-                exit(1)
-            print(str(result))
+    if check == 2:
+        #worker related commands
+        command = sys.argv[1]
+        worker = sys.argv[2]
+        if command == "workerStatus":
+            result = worker_status(worker)
+        elif command == "workerFind":
+            result = find_collection_number(worker)
+        elif command == "workerAssign":
+            result = assign_new_collection(worker)
+        else:
+            print("error reading command")
+            exit(1)
+        print(str(result))
 
 
 #start main
