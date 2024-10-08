@@ -267,8 +267,8 @@ else
         echo "transfer process for collection starting..."
         export_collection "$WORKER"
         #completed, send email ?
-        DATE=$(date)
-        mail -s "pa-gmworker0$WORKER exportCollection.sh COMPLETE" emv38@pitt.edu <<< "worker $WORKER finished exportCollection at $DATE"
+        # DATE=$(date)
+        # mail -s "pa-gmworker0$WORKER exportCollection.sh COMPLETE" emv38@pitt.edu <<< "worker $WORKER finished exportCollection at $DATE"
     else
         echo "exiting..."
         exit 0
