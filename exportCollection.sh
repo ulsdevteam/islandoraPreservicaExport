@@ -121,8 +121,8 @@ bagit_creation(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "drush starting"
     python3 csvUpdate.py "$COLLECTION" 'status' 'bagit'
-    #sudo -u karimay drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
-    sudo su -c "drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION" -s /bin/bash karimay
+    drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
+    #sudo su -c "drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION" -s /bin/bash karimay
 
     if [ $? -ne 0 ]; then
         python3 csvUpdate.py "$COLLECTION" 'status' 'ERROR'
@@ -138,8 +138,8 @@ DC_creation(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "DC starting"
     python3 csvUpdate.py "$COLLECTION" 'status' 'DC'
-    #sudo -u karimay wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
-    sudo su -c "wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view" -s /bin/bash karimay
+    wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
+    #sudo su -c "wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view" -s /bin/bash karimay
     
     if [ $? -ne 0 ]; then
         python3 csvUpdate.py "$COLLECTION" 'status' 'ERROR'
@@ -235,8 +235,8 @@ mark_ingested(){
 refresh_worker() {
     COLLECTION=$1
     WORKER=$2
-    #sudo -u karimay rm -rf /bagit/bags/*
-    sudo su -c "rm -rf /bagit/bags/*" -s /bin/bash karimay
+    rm -rf /bagit/bags/*
+    #sudo su -c "rm -rf /bagit/bags/*" -s /bin/bash karimay
     if [ $? -ne 0 ]; then
         log_error_exit "error trying to remove content of bags/ directory"
     fi 
