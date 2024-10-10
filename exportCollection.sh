@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Set the PATH variable
+export PATH=/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
+
 #script to start collection export 
 #./exportCollection.sh "{collection number}"
 
@@ -12,6 +15,8 @@ CSV_FILE='/mounts/transient/automation/reformatted.csv'
 LOG_DIR='/mounts/transient/automation/logs'
 ERROR_DIR='/mounts/transient/automation/err/'
 LOCK_FILE="/mounts/transient/automation/lock/"$WORKER"export.lock"
+
+CSV_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/csvUpdate.py'
 
 #create a lock file for cron jobs
 
@@ -120,12 +125,12 @@ bagit_creation(){
     COLLECTION=$1
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "drush starting"
-    python3 csvUpdate.py "$COLLECTION" 'status' 'bagit'
+    python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'bagit'
     drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION
     #sudo su -c "drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION" -s /bin/bash karimay
 
     if [ $? -ne 0 ]; then
-        python3 csvUpdate.py "$COLLECTION" 'status' 'ERROR'
+        python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'ERROR'
         log_error_exit "error running bagit drush command"  
     fi 
     update_log "$COLLECTION" "$WORKER" "drush completed"
@@ -137,12 +142,12 @@ DC_creation(){
     COLLECTION=$1
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "DC starting"
-    python3 csvUpdate.py "$COLLECTION" 'status' 'DC'
+    python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'DC'
     wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
     #sudo su -c "wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view" -s /bin/bash karimay
     
     if [ $? -ne 0 ]; then
-        python3 csvUpdate.py "$COLLECTION" 'status' 'ERROR'
+        python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'ERROR'
         log_error_exit "error running DC command"
     fi 
     update_log "$COLLECTION" "$WORKER" "DC collected"
@@ -155,16 +160,16 @@ export_script(){
     COLLECTION=$1
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "export script starting"
-    python3 csvUpdate.py "$COLLECTION" "status" "exportScript"
+    python3 "$CSV_SCRIPT" "$COLLECTION" "status" "exportScript"
     SCRIPT_OUTPUT="$(./preservica-mark-exported.sh 2>&1)"
     if [ $? -ne 0 ]; then
-        python3 csvUpdate.py $COLLECTION "status" "ERROR"
+        python3 "$CSV_SCRIPT" $COLLECTION "status" "ERROR"
         log_error_exit "mark exported script errored out: $SCRIPT_OUTPUT"
     fi 
     #./preservica-mark-exported.sh
     update_log "$COLLECTION" "$WORKER" "completed export script"
     #update status to Ready
-    python3 csvUpdate.py $COLLECTION "status" "Ready"
+    python3 "$CSV_SCRIPT" $COLLECTION "status" "Ready"
 }
 
 #export collection
@@ -175,8 +180,7 @@ export_collection() {
     echo "at $PWD"
 
     #check if worker is already assigned
-    CHECK_COLLECTION=$(python3 csvUpdate.py 'workerFind' $WORKER)
-    
+    CHECK_COLLECTION=$(python3 "$CSV_SCRIPT" 'workerFind' $WORKER)
     
     if [ "$CHECK_COLLECTION" = "None" ]; then
         echo "worker hasn't been assigned to a collection yet.. run archive03"
@@ -185,7 +189,7 @@ export_collection() {
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
         #check what stage it is at 
-        TRANSFER_STATUS=$(python3 csvUpdate.py 'workerStatus' $WORKER)
+        TRANSFER_STATUS=$(python3 "$CSV_SCRIPT" 'workerStatus' $WORKER)
     else
         log_error_exit "error finding collection number for worker $WORKER"
     fi
@@ -209,6 +213,7 @@ export_collection() {
             export_script "$COLLECTION" "$WORKER"
             ;;
         Ready)
+            update_log "$COLLECTION" "$WORKER" "collection is ready for archive"
             echo "collection is ready for archive"
             exit 0
             ;;
@@ -236,12 +241,14 @@ mark_ingested(){
 refresh_worker() {
     COLLECTION=$1
     WORKER=$2
+    update_log "$COLLECTION" "$WORKER" "attempting refresh of collection"
     rm -rf /bagit/bags/*
     #sudo su -c "rm -rf /bagit/bags/*" -s /bin/bash karimay
     if [ $? -ne 0 ]; then
         log_error_exit "error trying to remove content of bags/ directory"
     fi 
-    python3 csvUpdate.py $COLLECTION "status" ""
+    update_log "$COLLECTION" "$WORKER" "collection refreshed"
+    python3 "$CSV_SCRIPT" $COLLECTION "status" ""
 }
 
 
@@ -263,15 +270,8 @@ if [ -f "$FILE" ]; then
     echo "script completed - removing $FILE now"
     rm $FILE
 else
-    read -p "start transfer process(1) or exit(0): " USER_INPUT
-    if [ "$USER_INPUT" = "1" ]; then
-        echo "transfer process for collection starting..."
-        export_collection "$WORKER"
-        #completed, send email ?
-        DATE=$(date)
-        mail -s "pa-gmworker0$WORKER exportCollection.sh COMPLETE" emv38@pitt.edu <<< "worker $WORKER finished exportCollection at $DATE"
-    else
-        echo "exiting..."
-        exit 0
+    export_collection "$WORKER"
+    if [ $? -ne 0 ]; then
+        log_error_exit "error running export collection script"
     fi
 fi 

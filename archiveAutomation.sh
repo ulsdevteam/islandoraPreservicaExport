@@ -2,7 +2,7 @@
 
 ERROR_DIR='/mounts/transient/automation/err/'
 #ERRORLOG=~/"automationScripts/error.log"
-LOG_DIR='/mounts/transient/automation/logs/'
+LOG_DIR='/mounts/transient/automation/logs'
 LOCK_FILE="/mounts/transient/automation/lock/archive03.lock"
 
 
@@ -110,7 +110,7 @@ check_worker_status() {
  
     worker_directory="/mounts/transient/pa-gmworker-0$1/bags/"
     STATUS=$(python csvUpdate.py "workerStatus" "$1")
-
+    #echo "status: $STATUS"
     if [ "$STATUS" = "Ready" ]; then
         if [ "$(ls $worker_directory | grep DC.xml)" ]; then
             return 0;
@@ -118,7 +118,7 @@ check_worker_status() {
             log_error_exit "issue finding DC.xml within $worker_directory"
         fi
     elif [ "$STATUS" = "None" ]; then
-        echo "status of worker $1 is None meaning it's ready for a new collection"
+        #echo "status of worker $1 is None meaning it's ready for a new collection"
         return 2;
     else
         #echo "gmworker-0$1 still transferring.."
@@ -177,8 +177,8 @@ start_transfer() {
     update_log "$2" "$1" "unzipping items into Source directory"
     for j in /mounts/transient/$WORKER_NAME/bags/*.zip; do 
         update_log "$2" "$1" "$j"
-        #echo "$j"
-        unzip "$j" /mounts/transient/pittpax/Source/collection.$2/
+        echo "$j"
+        unzip "$j" -d /mounts/transient/pittpax/Source/collection.$2/
         if [ $? -ne 0 ]; then
             log_error_exit "Error unzipping file $j to /mounts/transient/pittpax/Source/collection.$2/"
         fi
@@ -188,9 +188,12 @@ start_transfer() {
 
 run_automated_pittPax() {
     
-    pitt_pax_v2_path=/home/$USER/islandoraPreservicaExport/bagit-pax/pitt_pax_v2.py
+    pitt_pax_v2_path="/home/"$USER"/islandoraPreservicaExport/bagit-pax/pitt_pax_v2.py"
    
-    python "$pitt_pax_v2_path" "1" "ALL" "1" || log_error_exit "unable to run the automated pitt pax script - proceeding with interactive"
+    python3 "$pitt_pax_v2_path" "1" "ALL" "1"
+    if [ $? -ne 0 ]; then
+        log_error_exit "unable to run the automated pitt pax script - proceeding with interactive"
+    fi 
     #python "$pitt_pax_v2_path" "first_step" "c_f_input" "send_to_s3"
 }
 
@@ -245,40 +248,36 @@ do
             log_error_exit "Error getting a valid collection number for pa-gmworker-0$i"
         fi
         echo "starting transfer now"
-        # update_log "$COLLECTION" "$i" "archive03 transfer starting"
+        update_log "$COLLECTION" "$i" "archive03 transfer starting"
 
-        # start_transfer "$i" $COLLECTION
+        start_transfer "$i" $COLLECTION
 
-        # # python csvUpdate.py "$COLLECTION" "worker" $i
-        # # if [ $? -ne 0 ]; then
-        # #     log_error_exit "Error csvUpdate.py update worker successfully for collection $COLLECTION in pa-gmworker-0$i"
-        # # fi
-        # python csvUpdate.py "$COLLECTION" "status" "In Progress"
-        # if [ $? -ne 0 ]; then
-        #     log_error_exit "Error csvUpdate.py didn't update status successfully for collection $COLLECTION in pa-gmworker-0$i"
-        # fi      
+        python csvUpdate.py "$COLLECTION" "status" "In Progress"
+        if [ $? -ne 0 ]; then
+            log_error_exit "Error csvUpdate.py didn't update status successfully for collection $COLLECTION in pa-gmworker-0$i"
+        fi      
         
-        # #separate method for python script to run
-        # update_log "$COLLECTION" "$i" "starting pitt pax script"
-        # run_automated_pittPax
-        # if [ $? -ne 0 ]; then 
-        #     log_error_exit "error running automated pittpax script for collection $COLLECTION in pa-gmworker-0$i"
-        # fi
-        # update_log "$COLLECTION" "$i" "pitt pax script completed"
+        #separate method for python script to run
+        update_log "$COLLECTION" "$i" "starting pitt pax script"
+        run_automated_pittPax
+        if [ $? -ne 0 ]; then 
+            log_error_exit "error running automated pittpax script for collection $COLLECTION in pa-gmworker-0$i"
+        fi
+        update_log "$COLLECTION" "$i" "pitt pax script completed"
 
 
-        # update_log "$COLLECTION" "$i" "removing collections"
-        # remove_old_collections "pa-gmworker-0$i"
+        update_log "$COLLECTION" "$i" "removing collections"
+        remove_old_collections "pa-gmworker-0$i"
         
 
-        # update_log "$COLLECTION" "$i" "$COLLECTION exported from pa-gmworker-0$i updating csv..."
-        # python csvUpdate.py "$COLLECTION" "status" "Complete"
-        # if [ $? -ne 0 ]; then
-        #     log_error_exit "Error csvUpdate.py didn't update status to Complete successfully for collection $COLLECTION in pa-gmworker-0$i"
-        # fi   
+        update_log "$COLLECTION" "$i" "$COLLECTION exported from pa-gmworker-0$i updating csv..."
+        python csvUpdate.py "$COLLECTION" "status" "Complete"
+        if [ $? -ne 0 ]; then
+            log_error_exit "Error csvUpdate.py didn't update status to Complete successfully for collection $COLLECTION in pa-gmworker-0$i"
+        fi   
 
-        # #assign a new collection
-        # assign_worker "$i"
+        #assign a new collection
+        assign_worker "$i"
         ;;
     1) 
         echo "pa-gmworker-0$i still running transfer"
