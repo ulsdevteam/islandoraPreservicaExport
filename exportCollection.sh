@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Set the PATH variable
+export PATH=/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
+
 #script to start collection export 
 #./exportCollection.sh "{collection number}"
 
