@@ -235,11 +235,13 @@ mark_ingested(){
 refresh_worker() {
     COLLECTION=$1
     WORKER=$2
-    rm -rf /bagit/bags/*
+    update_log "$COLLECTION" "$WORKER" "attempting refresh of collection"
+    rm -fR /bagit/bags/*
     #sudo su -c "rm -rf /bagit/bags/*" -s /bin/bash karimay
     if [ $? -ne 0 ]; then
         log_error_exit "error trying to remove content of bags/ directory"
     fi 
+    update_log "$COLLECTION" "$WORKER" "collection refreshed"
     python3 csvUpdate.py $COLLECTION "status" ""
 }
 
