@@ -264,15 +264,8 @@ if [ -f "$FILE" ]; then
     echo "script completed - removing $FILE now"
     rm $FILE
 else
-    read -p "start transfer process(1) or exit(0): " USER_INPUT
-    if [ "$USER_INPUT" = "1" ]; then
-        echo "transfer process for collection starting..."
-        export_collection "$WORKER"
-        #completed, send email ?
-        # DATE=$(date)
-        # mail -s "pa-gmworker0$WORKER exportCollection.sh COMPLETE" emv38@pitt.edu <<< "worker $WORKER finished exportCollection at $DATE"
-    else
-        echo "exiting..."
-        exit 0
+    export_collection "$WORKER"
+    if [ $? -ne 0 ]; then
+        log_error_exit "error running export collection script"
     fi
 fi 
