@@ -241,7 +241,7 @@ refresh_worker() {
     COLLECTION=$1
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "attempting refresh of collection"
-    rm -fR /bagit/bags/*
+    rm -rf /bagit/bags/*
     #sudo su -c "rm -rf /bagit/bags/*" -s /bin/bash karimay
     if [ $? -ne 0 ]; then
         log_error_exit "error trying to remove content of bags/ directory"
