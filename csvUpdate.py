@@ -150,6 +150,8 @@ def update_value(collection, column, value):
                 update_csv()
     except Timeout:
         print("Could not acquire lock, another process is writing to the file.")
+    except Exception as e:
+        print("Error occured during filelock attempt: " + e)
 
 
 def main():
