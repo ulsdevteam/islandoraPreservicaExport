@@ -213,6 +213,7 @@ export_collection() {
             export_script "$COLLECTION" "$WORKER"
             ;;
         Ready)
+            update_log "$COLLECTION" "$WORKER" "collection is ready for archive"
             echo "collection is ready for archive"
             exit 0
             ;;
