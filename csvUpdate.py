@@ -134,20 +134,20 @@ def update_value(collection, column, value):
     #update the value if it's worker then it should be a float
     lock = FileLock(LOCK_FILE)
     try:
-            # Try to acquire the lock with a timeout
-            with lock.acquire(timeout=10):  # Wait for up to 10 seconds for the lock
-                # Writing to the CSV file
-                if column == "worker":
-                    df.loc[collection, column] = int(value)
-                else:
-                    df.loc[collection, column] = value
+        # Try to acquire the lock with a timeout
+        with lock.acquire(timeout=10):  # Wait for up to 10 seconds for the lock
+            # Writing to the CSV file
+            if column == "worker":
+                df.loc[collection, column] = int(value)
+            else:
+                df.loc[collection, column] = value
 
-                #if process is complete remove the gmworker and update the exportdate for today
-                if value == "Complete":
-                    df.loc[collection, "worker"] = ""
-                    df.loc[collection, "exportDate"] = date.today().strftime("%m/%d/%Y")
-                track_change(collection, column, value)
-                update_csv()
+            #if process is complete remove the gmworker and update the exportdate for today
+            if value == "Complete":
+                df.loc[collection, "worker"] = ""
+                df.loc[collection, "exportDate"] = date.today().strftime("%m/%d/%Y")
+            track_change(collection, column, value)
+            update_csv()
     except Timeout:
         print("Could not acquire lock, another process is writing to the file.")
     except Exception as e:
