@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ERROR_DIR='/mounts/transient/automation/err/'
-#ERRORLOG=~/"automationScripts/error.log"
+
 LOG_DIR='/mounts/transient/automation/logs'
 LOCK_FILE="/mounts/transient/automation/lock/archive03.lock"
 
@@ -68,7 +68,7 @@ update_err() {
         echo "$ERROR_FILE exists, updating.."
     fi
     DATE=$(date)
-    echo "$DATE: $1" >> $ERROR_FILE
+    echo "$DATE at $HOSTNAME: $1" >> $ERROR_FILE
 }
 
 #log file update
@@ -103,7 +103,7 @@ update_log() {
 
     #date variable
     DATE=$(date)
-    echo "$DATE - $MESSAGE" >> $LOG_FILE
+    echo "$DATE at $HOSTNAME - $MESSAGE" >> $LOG_FILE
 
 }
 
@@ -169,9 +169,9 @@ start_transfer() {
     WORKER_NAME=pa-gmworker-0"$1"
 
     update_log "$2" "$1" "removing items from Source directory"
-    rm -fR /mounts/transient/pittpax/Source/*
+    ERROR_OUTPUT=$(rm -fR /mounts/transient/pittpax/Source/*)
     if [ $? -ne 0 ]; then
-        log_error_exit "Error removing /mounts/transient/pittpax/Source/* at $WORKER_NAME with collection $2"
+        log_error_exit "Error removing /mounts/transient/pittpax/Source/* at $WORKER_NAME with collection $2: $ERROR_OUPUT"
     fi
 
     update_log "$2" "$1" "making new directory in Source"
@@ -216,7 +216,6 @@ remove_old_collections() {
     #rm -fR /mounts/transient/pittpax/Master/Final/* 2>> $ERRORLOG
 
     ERROR_MSG=$(rm -rf /mounts/transient/pittpax/Master/Final/* 2>&1)
-
     if [ $? -ne 0 ]; then
         log_error_exit "$ERROR_MSG"
     fi
