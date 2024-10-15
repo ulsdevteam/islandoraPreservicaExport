@@ -167,7 +167,7 @@ export_script(){
         python3 "$CSV_SCRIPT" $COLLECTION "status" "ERROR"
         log_error_exit "mark exported script errored out: $SCRIPT_OUTPUT"
     fi 
-    #./preservica-mark-exported.sh
+
     update_log "$COLLECTION" "$WORKER" "completed export script"
     #update status to Ready
     python3 "$CSV_SCRIPT" $COLLECTION "status" "Ready"
@@ -255,6 +255,8 @@ refresh_worker() {
 
 #main script
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 
 #need to have 1 parameter in command line
