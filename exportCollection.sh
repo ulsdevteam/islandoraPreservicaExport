@@ -116,7 +116,7 @@ update_log() {
 
     #date variable
     DATE=$(date)
-    echo "$DATE - $MESSAGE" >> $LOG_FILE
+    echo "$DATE at $HOSTNAME - $MESSAGE" >> $LOG_FILE
 
 }
 
