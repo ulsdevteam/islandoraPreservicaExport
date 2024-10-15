@@ -121,13 +121,15 @@ update_log() {
 }
 
 #ingest script to run through all collection.csv files
- 
-for FILE in "$OPEX_DIR"/collection.*.csv; do
+
+LOCAL_OPEX_DIR="/home/emv38/islandoraPreservicaExport/opex-logs/"$WORKER""
+# for FILE in "$OPEX_DIR"/collection.*.csv; do
+for FILE in "$LOCAL_OPEX_DIR"/collection.*.csv; do
     if [ -f "$FILE" ]; then
 
-        COLLECTION="${FILE#collection.}"
-        COLLECTION="${COLLECTION%.csv}"
-
+        COLLECTION=$(basename "$FILE" .csv) 
+        COLLECTION="${COLLECTION#collection.}"
+        echo "collection number: $COLLECTION"
         update_log "$COLLECTION" "$WORKER" "attempting ingest script for $FILE"
         
         if $PRESERVICA_INGEST_SCRIPT "$FILE"; then
@@ -136,7 +138,5 @@ for FILE in "$OPEX_DIR"/collection.*.csv; do
         else 
             log_error "Error running ingest script for $FILE"
         fi
-       
     fi 
-
 done
