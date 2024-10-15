@@ -122,14 +122,15 @@ check_worker_status() {
         else
             log_error_exit "issue finding DC.xml within $worker_directory"
         fi
-    elif [ "$STATUS" = "None" ]; then
+    elif [ "$STATUS" = "NEEDNEWCOLLECTION" ]; then
         echo "status of worker $1 is None meaning it's ready for a new collection"
-        COLLECTION=$(python3 $CSV_SCRIPT workerFind "$1")
-        if [ "COLLECTION" = "None" ]; then   
-            return 2;
-        fi
-        echo "need to start export from gmworker-0$1" 
-        return 1;
+        return 2;
+        # COLLECTION=$(python3 $CSV_SCRIPT "workerFind" "$1")
+        # if [ "COLLECTION" = "None" ]; then   
+        #     return 2;
+        # fi
+        # echo "need to start export from gmworker-0$1" 
+        # return 1;
     elif [ "$STATUS" = "ERROR" ]; then
         log_error "ERROR found in worker $1"
         return 1;
@@ -252,6 +253,13 @@ do
 
     check_worker_status "$i"
     worker_status=$?
+
+    # 5 - archiveError issue that needs to be manually handled check the logs..
+    # 0 - Ready to start from the beginning
+    # 1 - transfer process started/yet to start 
+    # 2 - pitt pax script running/yet to run
+    # 3 - removing old collections
+    # 4 - assigning to a new collection
     
     case $worker_status in 
     0)
