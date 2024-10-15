@@ -7,6 +7,7 @@ LOCK_FILE="/mounts/transient/automation/lock/archive03.lock"
 
 PITT_PAX_V2_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/bagit-pax/pitt_pax_v2.py'
 CSV_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/csvUpdate.py'
+XML_ACCESS_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/xmlaccess.py'
 
 #lockfile generation
 if [ -f "$LOCK_FILE" ]; then
@@ -123,7 +124,7 @@ check_worker_status() {
         fi
     elif [ "$STATUS" = "None" ]; then
         echo "status of worker $1 is None meaning it's ready for a new collection"
-        COLLECTION=$(python3 csvupdate.py workerFind "$1")
+        COLLECTION=$(python3 $CSV_SCRIPT workerFind "$1")
         if [ "COLLECTION" = "None" ]; then   
             return 2;
         fi
@@ -148,7 +149,7 @@ get_collection_number() {
     #get collection number through python3 script
     DC_FILE=$(ls $collection_directory | grep DC.xml)
     
-    collection_number=$(python3 xmlaccess.py "$collection_directory/$DC_FILE")
+    collection_number=$(python3 $XML_ACCESS_SCRIPT "$collection_directory/$DC_FILE")
     exit_code=$?
 
     if [ $exit_code -eq 1 ]; then
@@ -180,7 +181,7 @@ start_transfer() {
         log_error_exit "Error making directory /mounts/transient/pittpax/Source/collection.$2/"
     fi
 
-    update_log "$2" "$1" "copying items to Source directory"
+    update_log "$2" "$1" "copying DC.xml to Source directory"
     cp /mounts/transient/$WORKER_NAME/bags/DC.xml /mounts/transient/pittpax/Source/collection.$2/
     if [ $? -ne 0 ]; then
         log_error_exit "Error copying /mounts/transient/$WORKER_NAME/bags/DC.xml to /mounts/transient/pittpax/Source/collection.$2/"
