@@ -1,10 +1,13 @@
 #!/bin/bash
 
 ERROR_DIR='/mounts/transient/automation/err/'
-#ERRORLOG=~/"automationScripts/error.log"
+
 LOG_DIR='/mounts/transient/automation/logs'
 LOCK_FILE="/mounts/transient/automation/lock/archive03.lock"
 
+PITT_PAX_V2_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/bagit-pax/pitt_pax_v2.py'
+CSV_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/csvUpdate.py'
+XML_ACCESS_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/xmlaccess.py'
 
 #lockfile generation
 if [ -f "$LOCK_FILE" ]; then
@@ -29,6 +32,8 @@ unlock() {
 }
 trap unlock EXIT
 
+
+#what kind of error - in case you need to restart a collection
 log_error_exit() {
     update_err "$1"
     exit 1
@@ -64,7 +69,7 @@ update_err() {
         echo "$ERROR_FILE exists, updating.."
     fi
     DATE=$(date)
-    echo "$DATE: $1" >> $ERROR_FILE
+    echo "$DATE at $HOSTNAME: $1" >> $ERROR_FILE
 }
 
 #log file update
@@ -99,7 +104,7 @@ update_log() {
 
     #date variable
     DATE=$(date)
-    echo "$DATE - $MESSAGE" >> $LOG_FILE
+    echo "$DATE at $HOSTNAME - $MESSAGE" >> $LOG_FILE
 
 }
 
@@ -109,7 +114,7 @@ update_log() {
 check_worker_status() {
  
     worker_directory="/mounts/transient/pa-gmworker-0$1/bags/"
-    STATUS=$(python csvUpdate.py "workerStatus" "$1")
+    STATUS=$(python3 $CSV_SCRIPT "workerStatus" "$1")
     #echo "status: $STATUS"
     if [ "$STATUS" = "Ready" ]; then
         if [ "$(ls $worker_directory | grep DC.xml)" ]; then
@@ -117,9 +122,18 @@ check_worker_status() {
         else
             log_error_exit "issue finding DC.xml within $worker_directory"
         fi
-    elif [ "$STATUS" = "None" ]; then
-        #echo "status of worker $1 is None meaning it's ready for a new collection"
+    elif [ "$STATUS" = "NEEDNEWCOLLECTION" ]; then
+        echo "status of worker $1 is None meaning it's ready for a new collection"
         return 2;
+        # COLLECTION=$(python3 $CSV_SCRIPT "workerFind" "$1")
+        # if [ "COLLECTION" = "None" ]; then   
+        #     return 2;
+        # fi
+        # echo "need to start export from gmworker-0$1" 
+        # return 1;
+    elif [ "$STATUS" = "ERROR" ]; then
+        log_error "ERROR found in worker $1"
+        return 1;
     else
         #echo "gmworker-0$1 still transferring.."
         return 1;
@@ -133,10 +147,10 @@ get_collection_number() {
     
     collection_directory="/mounts/transient/pa-gmworker-0$1/bags/"
 
-    #get collection number through python script
+    #get collection number through python3 script
     DC_FILE=$(ls $collection_directory | grep DC.xml)
     
-    collection_number=$(python xmlaccess.py "$collection_directory/$DC_FILE")
+    collection_number=$(python3 $XML_ACCESS_SCRIPT "$collection_directory/$DC_FILE")
     exit_code=$?
 
     if [ $exit_code -eq 1 ]; then
@@ -157,9 +171,9 @@ start_transfer() {
     WORKER_NAME=pa-gmworker-0"$1"
 
     update_log "$2" "$1" "removing items from Source directory"
-    rm -fR /mounts/transient/pittpax/Source/*
+    ERROR_OUTPUT=$(rm -fR /mounts/transient/pittpax/Source/*)
     if [ $? -ne 0 ]; then
-        log_error_exit "Error removing /mounts/transient/pittpax/Source/* at $WORKER_NAME with collection $2"
+        log_error_exit "Error removing /mounts/transient/pittpax/Source/* at $WORKER_NAME with collection $2: $ERROR_OUPUT"
     fi
 
     update_log "$2" "$1" "making new directory in Source"
@@ -168,7 +182,7 @@ start_transfer() {
         log_error_exit "Error making directory /mounts/transient/pittpax/Source/collection.$2/"
     fi
 
-    update_log "$2" "$1" "copying items to Source directory"
+    update_log "$2" "$1" "copying DC.xml to Source directory"
     cp /mounts/transient/$WORKER_NAME/bags/DC.xml /mounts/transient/pittpax/Source/collection.$2/
     if [ $? -ne 0 ]; then
         log_error_exit "Error copying /mounts/transient/$WORKER_NAME/bags/DC.xml to /mounts/transient/pittpax/Source/collection.$2/"
@@ -188,9 +202,9 @@ start_transfer() {
 
 run_automated_pittPax() {
     
-    pitt_pax_v2_path="/home/"$USER"/islandoraPreservicaExport/bagit-pax/pitt_pax_v2.py"
+    #pitt_pax_v2_path="/home/"$USER"/islandoraPreservicaExport/bagit-pax/pitt_pax_v2.py"
    
-    python3 "$pitt_pax_v2_path" "1" "ALL" "1"
+    python3 "$PITT_PAX_V2_SCRIPT" "1" "ALL" "1"
     if [ $? -ne 0 ]; then
         log_error_exit "unable to run the automated pitt pax script - proceeding with interactive"
     fi 
@@ -204,7 +218,6 @@ remove_old_collections() {
     #rm -fR /mounts/transient/pittpax/Master/Final/* 2>> $ERRORLOG
 
     ERROR_MSG=$(rm -rf /mounts/transient/pittpax/Master/Final/* 2>&1)
-
     if [ $? -ne 0 ]; then
         log_error_exit "$ERROR_MSG"
     fi
@@ -224,22 +237,29 @@ remove_old_collections() {
 #assign worker to new collection
 assign_worker() {
     WORKER=$1
-    python csvUpdate.py workerAssign "$WORKER" || log_error_exit "error in assigning new collection to worker $WORKER"
+    python3 $CSV_SCRIPT workerAssign "$WORKER" || log_error_exit "error in assigning new collection to worker $WORKER"
 }
 
 #-----------------------------------------------------------------------------------------
 #main script starts
 #-----------------------------------------------------------------------------------------
-CONTINUE=true
+# CONTINUE=true
 for ((i=1 ; i<=4 ; i++ ));
 do
 
-    if [ "$CONTINUE" = false ]; then
-        log_error_exit "FORCE EXIT: exiting program at loop index $i"
-    fi
+    # if [ "$CONTINUE" = false ]; then
+    #     log_error_exit "FORCE EXIT: exiting program at loop index $i"
+    # fi
 
     check_worker_status "$i"
     worker_status=$?
+
+    # 5 - archiveError issue that needs to be manually handled check the logs..
+    # 0 - Ready to start from the beginning
+    # 1 - transfer process started/yet to start 
+    # 2 - pitt pax script running/yet to run
+    # 3 - removing old collections
+    # 4 - assigning to a new collection
     
     case $worker_status in 
     0)
@@ -252,7 +272,7 @@ do
 
         start_transfer "$i" $COLLECTION
 
-        python csvUpdate.py "$COLLECTION" "status" "In Progress"
+        python3 $CSV_SCRIPT "$COLLECTION" "status" "In Progress"
         if [ $? -ne 0 ]; then
             log_error_exit "Error csvUpdate.py didn't update status successfully for collection $COLLECTION in pa-gmworker-0$i"
         fi      
@@ -268,16 +288,23 @@ do
 
         update_log "$COLLECTION" "$i" "removing collections"
         remove_old_collections "pa-gmworker-0$i"
+        if [ $? -ne 0 ]; then 
+            log_error_exit "error removing collections for collection $COLLECTION in pa-gmworker-0$i"
+        fi
         
 
         update_log "$COLLECTION" "$i" "$COLLECTION exported from pa-gmworker-0$i updating csv..."
-        python csvUpdate.py "$COLLECTION" "status" "Complete"
+        python3 $CSV_SCRIPT "$COLLECTION" "status" "Complete"
         if [ $? -ne 0 ]; then
             log_error_exit "Error csvUpdate.py didn't update status to Complete successfully for collection $COLLECTION in pa-gmworker-0$i"
         fi   
 
         #assign a new collection
         assign_worker "$i"
+        if [ $? -ne 0 ]; then 
+            log_error_exit "error assigning new collection for pa-gmworker-0$i"
+        fi
+
         ;;
     1) 
         echo "pa-gmworker-0$i still running transfer"
@@ -287,25 +314,25 @@ do
         assign_worker "$i"
         ;;
     *)
-        log_error_exit "unknown status code for worker $i"
+        log_error_exit "unknown status code for worker $i: $worker_status"
         ;;
     esac
 
-    read -p "continue? (Y or N): " USER_INPUT
-    if [ "$USER_INPUT" = "N" ]; then
-        CONTINUE=false
-    fi
+    # read -p "continue? (Y or N): " USER_INPUT
+    # if [ "$USER_INPUT" = "N" ]; then
+    #     CONTINUE=false
+    # fi
 
 done
 
 #display all the changes made after all four have been run
-read -p "looped through all servers, restart (Y) or exit(N): " INPUT
-if [ "$INPUT" = "Y" ]; then
-    bash archiveAutomation.sh
-elif [ "$INPUT" = "N" ]; then
-    exit 0
-else
-    log_error_exit "ERROR at loop end didn't type either Y/N, instead typed $INPUT"
-fi
+# read -p "looped through all servers, restart (Y) or exit(N): " INPUT
+# if [ "$INPUT" = "Y" ]; then
+#     bash archiveAutomation.sh
+# elif [ "$INPUT" = "N" ]; then
+#     exit 0
+# else
+#     log_error_exit "ERROR at loop end didn't type either Y/N, instead typed $INPUT"
+# fi
 
 #-----------------------------------------------------------------------------------------
