@@ -17,6 +17,7 @@ ERROR_DIR='/mounts/transient/automation/err/'
 LOCK_FILE="/mounts/transient/automation/lock/"$WORKER"export.lock"
 
 CSV_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/csvUpdate.py'
+PRESERVICA_EXPORT_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/preservica-mark-exported.sh'
 
 #create a lock file for cron jobs
 
@@ -161,7 +162,7 @@ export_script(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "export script starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" "status" "exportScript"
-    SCRIPT_OUTPUT="$(./preservica-mark-exported.sh 2>&1)"
+    SCRIPT_OUTPUT="$($PRESERVICA_EXPORT_SCRIPT 2>&1)"
     if [ $? -ne 0 ]; then
         python3 "$CSV_SCRIPT" $COLLECTION "status" "ERROR"
         log_error_exit "mark exported script errored out: $SCRIPT_OUTPUT"
