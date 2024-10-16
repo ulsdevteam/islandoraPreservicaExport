@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Set the PATH variable
+export PATH=/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
+
 ERROR_DIR='/mounts/transient/automation/err/'
 
 LOG_DIR='/mounts/transient/automation/logs'
@@ -173,7 +176,7 @@ start_transfer() {
     WORKER_NAME=pa-gmworker-0"$1"
 
     update_log "$2" "$1" "removing items from Source directory"
-    ERROR_OUTPUT=$(rm -fR /mounts/transient/pittpax/Source/*)
+    ERROR_OUTPUT=$(rm -rf /mounts/transient/pittpax/Source/*)
     if [ $? -ne 0 ]; then
         log_error_exit "Error removing /mounts/transient/pittpax/Source/* at $WORKER_NAME with collection $2: $ERROR_OUPUT"
     fi
@@ -217,7 +220,7 @@ run_automated_pittPax() {
 # $1 parameter is the gmworker server to delete from
 remove_old_collections() {
     
-    #rm -fR /mounts/transient/pittpax/Master/Final/* 2>> $ERRORLOG
+    
 
     ERROR_MSG=$(rm -rf /mounts/transient/pittpax/Master/Final/* 2>&1)
     if [ $? -ne 0 ]; then
@@ -227,9 +230,7 @@ remove_old_collections() {
     
     #echo "removing from: /mounts/transient/$1/bags/*"
 
-    ERROR_MSG=$(rm -fR /mounts/transient/$1/bags/* 2>&1)
-
-    #rm -fR /mounts/transient/$1/bags/* 2>> $ERRORLOG
+    ERROR_MSG=$(rm -rf /mounts/transient/$1/bags/* 2>&1)
     if [ $? -ne 0 ]; then
         log_error_exit "$ERROR_MSG"
     fi
@@ -261,6 +262,9 @@ add_to_temp() {
     fi
 
     tail -1 "$CHECK_LOG_FILE" >> "$TEMP_FILE"
+    if [ $? -ne 0 ]; then
+        log_error_exit "Error adding the last line of $COLLECTION-$WORKER.log to $TEMP_FILE"
+    fi
 
 }
 
@@ -270,10 +274,6 @@ add_to_temp() {
 # CONTINUE=true
 for ((i=1 ; i<=4 ; i++ ));
 do
-
-    # if [ "$CONTINUE" = false ]; then
-    #     log_error_exit "FORCE EXIT: exiting program at loop index $i"
-    # fi
 
     check_worker_status "$i"
     worker_status=$?
@@ -291,10 +291,11 @@ do
         if [ -z "$COLLECTION" ] || [ "$COLLECTION" -eq 1 ]; then
             log_error_exit "Error getting a valid collection number for pa-gmworker-0$i"
         fi
+
         echo "starting transfer now"
         update_log "$COLLECTION" "$i" "archive03 transfer starting"
 
-        start_transfer "$i" $COLLECTION
+        start_transfer "$i" "$COLLECTION"
 
         python3 $CSV_SCRIPT "$COLLECTION" "status" "In Progress"
         if [ $? -ne 0 ]; then
@@ -348,11 +349,6 @@ do
         ;;
     esac
 
-    # read -p "continue? (Y or N): " USER_INPUT
-    # if [ "$USER_INPUT" = "N" ]; then
-    #     CONTINUE=false
-    # fi
-
 
 done
 
@@ -360,6 +356,12 @@ if [ -f "$TEMP_FILE" ]; then
     #has items in it that need to be mailed
     DATE=$(date)
     echo "$HOSTNAME run completed at $DATE" | mutt -a "$TEMP_FILE" -s 'Archive transfers complete - wait for OPEX' emv38@pitt.edu
+
+    rm -f "$TEMP_FILE"
+    if [ $? -ne 0 ]; then 
+        log_error_exit "Error removing $TEMP_FILE - must manually do so before next cron"
+    fi
+
 fi 
 
 #display all the changes made after all four have been run
