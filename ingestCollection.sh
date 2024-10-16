@@ -17,7 +17,7 @@ LOCK_FILE="/mounts/transient/automation/lock/"$WORKER"ingest.lock"
 
 CSV_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/csvUpdate.py'
 PRESERVICA_INGEST_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/preservica-mark-ingested.sh'
-OPEX_DIR="/home/emv38/islandoraPreservicaExport/opex-logs/"$WORKER""
+OPEX_DIR="/mounts/transient/automation/islandoraPreservicaExport/opex-logs/"$WORKER""
 
 #create a lock file for cron jobs
 
