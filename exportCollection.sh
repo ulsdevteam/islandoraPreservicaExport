@@ -234,7 +234,7 @@ refresh_worker() {
         log_error_exit "error trying to remove content of bags/ directory"
     fi 
     update_log "$COLLECTION" "$WORKER" "collection refreshed"
-    python3 "$CSV_SCRIPT" $COLLECTION "status" ""
+    python3 "$CSV_SCRIPT" $COLLECTION "status" "nan"
 }
 
 
