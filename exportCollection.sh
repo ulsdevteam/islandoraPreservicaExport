@@ -184,8 +184,8 @@ export_collection() {
     CHECK_COLLECTION=$(python3 "$CSV_SCRIPT" 'workerFind' $WORKER)
     
     if [ "$CHECK_COLLECTION" = "None" ]; then
-        echo "worker hasn't been assigned to a collection yet.. run archive03"
-        exit 1
+        log_error "worker hasn't been assigned to a collection yet.. run archive03"
+        exit 0
     elif [[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]; then
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
