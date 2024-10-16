@@ -174,8 +174,7 @@ export_script(){
 }
 
 #export collection
-#1st parameter is collection number
-#2nd parameter is worker number
+#1st parameter is worker
 export_collection() {
     WORKER=$1
     echo "at $PWD"
@@ -231,7 +230,6 @@ refresh_worker() {
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "attempting refresh of collection"
     rm -rf /bagit/bags/*
-    #sudo su -c "rm -rf /bagit/bags/*" -s /bin/bash karimay
     if [ $? -ne 0 ]; then
         log_error_exit "error trying to remove content of bags/ directory"
     fi 
