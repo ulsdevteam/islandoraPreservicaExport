@@ -133,7 +133,7 @@ for FILE in "$OPEX_DIR"/collection.*.csv; do
         update_log "$COLLECTION" "$WORKER" "attempting ingest script for $FILE"
         
         if $PRESERVICA_INGEST_SCRIPT "$FILE"; then
-            update_log "$COLLECTION" "$WORKER" "ingest script completed"
+            update_log "$COLLECTION" "$WORKER" "ingest script completed - removing $FILE now"
             rm "$FILE"
         else 
             log_error "Error running ingest script for $FILE"

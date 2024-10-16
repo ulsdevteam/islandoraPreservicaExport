@@ -174,8 +174,7 @@ export_script(){
 }
 
 #export collection
-#1st parameter is collection number
-#2nd parameter is worker number
+#1st parameter is worker
 export_collection() {
     WORKER=$1
     echo "at $PWD"
@@ -184,8 +183,8 @@ export_collection() {
     CHECK_COLLECTION=$(python3 "$CSV_SCRIPT" 'workerFind' $WORKER)
     
     if [ "$CHECK_COLLECTION" = "None" ]; then
-        echo "worker hasn't been assigned to a collection yet.. run archive03"
-        exit 1
+        log_error "worker hasn't been assigned to a collection yet.. run archive03"
+        exit 0
     elif [[ "$CHECK_COLLECTION" =~ ^[0-9]+$ ]]; then
         echo "worker $WORKER is currently in collection $CHECK_COLLECTION"
         COLLECTION=$CHECK_COLLECTION
@@ -231,12 +230,11 @@ refresh_worker() {
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "attempting refresh of collection"
     rm -rf /bagit/bags/*
-    #sudo su -c "rm -rf /bagit/bags/*" -s /bin/bash karimay
     if [ $? -ne 0 ]; then
         log_error_exit "error trying to remove content of bags/ directory"
     fi 
     update_log "$COLLECTION" "$WORKER" "collection refreshed"
-    python3 "$CSV_SCRIPT" $COLLECTION "status" ""
+    python3 "$CSV_SCRIPT" $COLLECTION "status" "nan"
 }
 
 
