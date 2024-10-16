@@ -122,9 +122,9 @@ update_log() {
 
 #ingest script to run through all collection.csv files
 
-LOCAL_OPEX_DIR="/home/emv38/islandoraPreservicaExport/opex-logs/"$WORKER""
-# for FILE in "$OPEX_DIR"/collection.*.csv; do
-for FILE in "$LOCAL_OPEX_DIR"/collection.*.csv; do
+#LOCAL_OPEX_DIR="/home/emv38/islandoraPreservicaExport/opex-logs/"$WORKER""
+for FILE in "$OPEX_DIR"/collection.*.csv; do
+    #for FILE in "$LOCAL_OPEX_DIR"/collection.*.csv; do
     if [ -f "$FILE" ]; then
 
         COLLECTION=$(basename "$FILE" .csv) 
