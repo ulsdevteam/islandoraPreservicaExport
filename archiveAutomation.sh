@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Set the PATH variable
+export PATH=/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
+
 ERROR_DIR='/mounts/transient/automation/err/'
 
 LOG_DIR='/mounts/transient/automation/logs'
