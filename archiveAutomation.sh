@@ -357,10 +357,10 @@ if [ -f "$TEMP_FILE" ]; then
     DATE=$(date)
     echo "$HOSTNAME run completed at $DATE" | mutt -a "$TEMP_FILE" -s 'Archive transfers complete - wait for OPEX' emv38@pitt.edu
 
-    rm -f "$TEMP_FILE"
-    if [ $? -ne 0 ]; then 
-        log_error_exit "Error removing $TEMP_FILE - must manually do so before next cron"
-    fi
+    # rm -f "$TEMP_FILE"
+    # if [ $? -ne 0 ]; then 
+    #     log_error_exit "Error removing $TEMP_FILE - must manually do so before next cron"
+    # fi
 
 fi 
 
