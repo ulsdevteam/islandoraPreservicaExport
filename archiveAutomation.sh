@@ -9,6 +9,8 @@ PITT_PAX_V2_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/bagit
 CSV_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/csvUpdate.py'
 XML_ACCESS_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/xmlaccess.py'
 
+TEMP_FILE='/mounts/transient/automation/temp.log'
+
 #lockfile generation
 if [ -f "$LOCK_FILE" ]; then
     #read PID
@@ -240,6 +242,28 @@ assign_worker() {
     python3 $CSV_SCRIPT workerAssign "$WORKER" || log_error_exit "error in assigning new collection to worker $WORKER"
 }
 
+#update temp dir
+#collection is 1 
+#worker is 2
+#adding last line
+add_to_temp() {
+    COLLECTION=$1
+    WORKER=$2
+
+    CHECK_LOG_FILE="$LOG_DIR/$COLLECTION-$WORKER.log"
+    
+    if [[ ! -f "$CHECK_LOG_FILE" ]]; then
+        log_error_exit "error finding log file $COLLECTION-$WORKER.log"
+    fi 
+
+    if [[ ! -f "$TEMP_FILE" ]]; then
+        touch "$TEMP_FILE"
+    fi
+
+    tail -1 "$CHECK_LOG_FILE" >> "$TEMP_FILE"
+
+}
+
 #-----------------------------------------------------------------------------------------
 #main script starts
 #-----------------------------------------------------------------------------------------
@@ -305,6 +329,12 @@ do
             log_error_exit "error assigning new collection for pa-gmworker-0$i"
         fi
 
+        #add to a temp log
+        add_to_temp "$COLLECTION" "$i"
+        if [ $? -ne 0 ]; then 
+            log_error_exit "error adding to temp log for pa-gmworker-0$i"
+        fi
+
         ;;
     1) 
         echo "pa-gmworker-0$i still running transfer"
@@ -323,7 +353,14 @@ do
     #     CONTINUE=false
     # fi
 
+
 done
+
+if [ -f "$TEMP_FILE" ]; then
+    #has items in it that need to be mailed
+    DATE=$(date)
+    echo "$HOSTNAME run completed at $DATE" | mutt -a "$TEMP_FILE" -s 'Archive transfers complete - wait for OPEX' emv38@pitt.edu
+fi 
 
 #display all the changes made after all four have been run
 # read -p "looped through all servers, restart (Y) or exit(N): " INPUT

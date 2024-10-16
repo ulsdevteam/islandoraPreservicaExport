@@ -4,7 +4,7 @@
 export PATH=/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin
 
 #script to start collection export 
-#./exportCollection.sh "{collection number}"
+#./exportCollection.sh
 
 #getting worker number
 WORKER="${HOSTNAME##*-}"
@@ -225,19 +225,6 @@ export_collection() {
 
 }
 
-
-mark_ingested(){
-    COLLECTION=$1
-    if [ "$PWD" = "/home/$USER/islandoraPreservicaExport" ]; then
-        echo "in correct working directory beginning: ./preservica-mark-ingested.sh collection.$COLLECTION.csv now"
-        ./preservica-mark-ingested.sh collection.$COLLECTION.csv
-        #begin transfer of new collection
-    else
-        echo "not in correct working directory"
-        exit 1
-    fi 
-}
-
 #restart worker by removing all files and changing status back to nan
 refresh_worker() {
     COLLECTION=$1
@@ -256,25 +243,7 @@ refresh_worker() {
 #main script
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
-
-
-#need to have 1 parameter in command line
-if [ -z "$1" ]; then
-    echo "currently at worker: $WORKER"
-    echo "since no collection number entered going into export process automatically"
+export_collection "$WORKER"
+if [ $? -ne 0 ]; then
+    log_error_exit "error running export collection script"
 fi
-
-COLLECTION=$1
-FILE="collection.$COLLECTION.csv"
-if [ -f "$FILE" ]; then
-    echo "$FILE exists, beginning ingest script"
-    mark_ingested "$COLLECTION"
-    echo "script completed - removing $FILE now"
-    rm $FILE
-else
-    export_collection "$WORKER"
-    if [ $? -ne 0 ]; then
-        log_error_exit "error running export collection script"
-    fi
-fi 
