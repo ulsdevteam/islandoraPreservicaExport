@@ -662,7 +662,7 @@ def fCheckWorkflowStatus(fc_wf_id):
 
 
 # define ini file
-config_input = "pitt.ini"
+config_input = "/mounts/transient/automation/islandoraPreservicaExport/pitt.ini"
 config = configparser.ConfigParser()
 config.sections()
 config.read(config_input)
