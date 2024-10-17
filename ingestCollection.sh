@@ -134,7 +134,14 @@ for FILE in "$OPEX_DIR"/collection.*.csv; do
         
         if $PRESERVICA_INGEST_SCRIPT "$FILE"; then
             update_log "$COLLECTION" "$WORKER" "ingest script completed - removing $FILE now"
-            rm "$FILE"
+
+            #updating with current date to show ingest has completed
+            current_date=$(date +"%d/%m/%Y")
+            python3 "$CSV_SCRIPT" "$COLLECTION" 'exportDate' "$current_date"
+
+            if ! rm "$FILE"; then
+                log_error "Error removing $FILE"
+            fi
         else 
             log_error "Error running ingest script for $FILE"
         fi
