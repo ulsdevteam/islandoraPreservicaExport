@@ -127,8 +127,8 @@ bagit_creation(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "drush starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'bagit'
-    output=$(drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION 2>&1)
-    
+    output=$(drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection."$COLLECTION" 2>&1)
+
     if [ $? -ne 0 ]; then
         python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'ERROR'
         log_error_exit "error running bagit drush command: $output"  
@@ -143,12 +143,11 @@ DC_creation(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "DC starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'DC'
-    wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view
-    #sudo su -c "wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view" -s /bin/bash karimay
+    output=$(wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view 2>&1)
     
     if [ $? -ne 0 ]; then
         python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'ERROR'
-        log_error_exit "error running DC command"
+        log_error_exit "error running DC command: $output"
     fi 
     update_log "$COLLECTION" "$WORKER" "DC collected"
 }
@@ -228,9 +227,10 @@ refresh_worker() {
     COLLECTION=$1
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "attempting refresh of collection"
-    rm -rf /bagit/bags/*
+    output=$(rm -rf /bagit/bags/* 2>&1)
+
     if [ $? -ne 0 ]; then
-        log_error_exit "error trying to remove content of bags/ directory"
+        log_error_exit "error trying to remove content of bags/ directory: $output"
     fi 
     update_log "$COLLECTION" "$WORKER" "collection refreshed"
     python3 "$CSV_SCRIPT" $COLLECTION "status" "nan"
