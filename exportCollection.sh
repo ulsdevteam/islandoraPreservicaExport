@@ -127,8 +127,8 @@ bagit_creation(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "drush starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'bagit'
-    output=$(drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION 2>&1)    #sudo su -c "drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION" -s /bin/bash karimay
-
+    output=$(drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection.$COLLECTION 2>&1)
+    
     if [ $? -ne 0 ]; then
         python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'ERROR'
         log_error_exit "error running bagit drush command: $output"  
