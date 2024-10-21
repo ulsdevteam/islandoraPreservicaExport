@@ -73,7 +73,7 @@ update_err() {
     else
         echo "$ERROR_FILE exists, updating.."
     fi
-    DATE=$(date +"%I:%M:%S %p")
+    DATE=$(date +"%A, %B %d, %Y %I:%M %p")
     echo "$DATE at $HOSTNAME: $1" >> $ERROR_FILE
 }
 
@@ -108,7 +108,7 @@ update_log() {
     fi 
 
     #date variable
-    DATE=$(date +"%I:%M:%S %p")
+    DATE=$(date +"%A, %B %d, %Y %I:%M %p")
     echo "$DATE at $HOSTNAME - $MESSAGE" >> $LOG_FILE
 
 }
