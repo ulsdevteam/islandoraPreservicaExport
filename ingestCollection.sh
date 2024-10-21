@@ -136,7 +136,7 @@ for FILE in "$OPEX_DIR"/collection.*.csv; do
             update_log "$COLLECTION" "$WORKER" "ingest script completed - removing $FILE now"
 
             #updating with current date to show ingest has completed
-            current_date=$(date +"%d/%m/%Y")
+            current_date=$(date +"%m/%d/%Y")
             python3 "$CSV_SCRIPT" "$COLLECTION" 'exportDate' "$current_date"
 
             if ! rm "$FILE"; then

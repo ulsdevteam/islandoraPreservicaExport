@@ -140,7 +140,7 @@ def update_value(collection, column, value):
             else:
                 df.loc[collection, column] = value
 
-            #if process is complete remove the gmworker and update the exportdate for today
+            #if process is complete remove the gmworker
             if value == "Complete":
                 df.loc[collection, "worker"] = ""
                 #df.loc[collection, "exportDate"] = date.today().strftime("%m/%d/%Y")
