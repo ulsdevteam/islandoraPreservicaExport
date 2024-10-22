@@ -20,10 +20,10 @@ if [ -f "$LOCK_FILE" ]; then
     LOCKED_PID=$(cat "$LOCK_FILE")
     #is process still running?
     if ps -p "$LOCKED_PID"; then
-        echo "script currently running with PID: $LOCKED_PID, exiting"
+        log_error "script currently running with PID: $LOCKED_PID, exiting"
         exit 0
     else
-        echo "old lock file, removing"
+        log_error "old lock file, removing"
         rm -f "$LOCK_FILE"
     fi 
 fi
@@ -140,7 +140,7 @@ check_worker_status() {
         log_error "ERROR found in worker $1"
         return 1;
     else
-        #echo "gmworker-0$1 still transferring.."
+        log_error "other error found within worker $1 with status: $STATUS"
         return 1;
     fi 
 
