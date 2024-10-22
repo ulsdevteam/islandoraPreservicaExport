@@ -19,6 +19,9 @@ LOCK_FILE="/mounts/transient/automation/lock/"$WORKER"export.lock"
 CSV_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/csvUpdate.py'
 PRESERVICA_EXPORT_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/preservica-mark-exported.sh'
 
+ATTEMPTS=0
+MAX_RETRIES=4
+
 #create a lock file for cron jobs
 
 #lockfile generation
@@ -125,13 +128,15 @@ update_log() {
 bagit_creation(){
     COLLECTION=$1
     WORKER=$2
+
     update_log "$COLLECTION" "$WORKER" "drush starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'bagit'
     output=$(drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection."$COLLECTION" 2>&1)
 
     if [ $? -ne 0 ]; then
         python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'ERROR'
-        log_error_exit "error running bagit drush command: $output"  
+        log_error "error running bagit drush command: $output"  
+        return 1
     fi 
     update_log "$COLLECTION" "$WORKER" "drush completed"
 }
@@ -141,13 +146,15 @@ bagit_creation(){
 DC_creation(){
     COLLECTION=$1
     WORKER=$2
+
     update_log "$COLLECTION" "$WORKER" "DC starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'DC'
     output=$(wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view 2>&1)
     
     if [ $? -ne 0 ]; then
         python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'ERROR'
-        log_error_exit "error running DC command: $output"
+        log_error "error running DC command: $output"
+        return 1
     fi 
     update_log "$COLLECTION" "$WORKER" "DC collected"
 }
@@ -160,15 +167,31 @@ export_script(){
     WORKER=$2
     update_log "$COLLECTION" "$WORKER" "export script starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" "status" "exportScript"
-    SCRIPT_OUTPUT="$($PRESERVICA_EXPORT_SCRIPT 2>&1)"
+    output="$($PRESERVICA_EXPORT_SCRIPT 2>&1)"
     if [ $? -ne 0 ]; then
         python3 "$CSV_SCRIPT" $COLLECTION "status" "ERROR"
-        log_error_exit "mark exported script errored out: $SCRIPT_OUTPUT"
+        log_error "mark exported script errored out with: $output"
+        return 1
     fi 
 
     update_log "$COLLECTION" "$WORKER" "completed export script"
     #update status to Ready
     python3 "$CSV_SCRIPT" $COLLECTION "status" "Ready"
+}
+
+#restart worker by removing all files and changing status back to nan
+refresh_worker() {
+    COLLECTION=$1
+    WORKER=$2
+    update_log "$COLLECTION" "$WORKER" "attempting refresh of collection"
+    output=$(rm -rf /bagit/bags/* 2>&1)
+
+    if [ $? -ne 0 ]; then
+        log_error "error trying to remove content of bags/ directory: $output"
+        return 1
+    fi 
+    update_log "$COLLECTION" "$WORKER" "collection refreshed"
+    python3 "$CSV_SCRIPT" $COLLECTION "status" "nan"
 }
 
 #export collection
@@ -196,19 +219,19 @@ export_collection() {
 
         ERROR)
             echo "refreshing worker to start"
-            refresh_worker "$COLLECTION" "$WORKER"
+            refresh_worker "$COLLECTION" "$WORKER" || return $?
             ;&
         bagit | nan)
             echo "in bagit creation stage"
-            bagit_creation "$COLLECTION" "$WORKER"
+            bagit_creation "$COLLECTION" "$WORKER" || return $?
             ;&
         DC)
             echo "restarting DC stage"
-            DC_creation "$COLLECTION" "$WORKER"
+            DC_creation "$COLLECTION" "$WORKER" || return $?
             ;&
         exportScript)
             echo "calling export script"
-            export_script "$COLLECTION" "$WORKER"
+            export_script "$COLLECTION" "$WORKER" || return $?
             ;;
         Ready)
             update_log "$COLLECTION" "$WORKER" "collection is ready for archive"
@@ -216,31 +239,36 @@ export_collection() {
             exit 0
             ;;
         *)
-            log_error_exit "unknown status found for worker $WORKER in collection $COLLECTION"
+            log_error "unknown status found for worker $WORKER in collection $COLLECTION"
+            return 1
             ;;
     esac
 
-}
-
-#restart worker by removing all files and changing status back to nan
-refresh_worker() {
-    COLLECTION=$1
-    WORKER=$2
-    update_log "$COLLECTION" "$WORKER" "attempting refresh of collection"
-    output=$(rm -rf /bagit/bags/* 2>&1)
-
-    if [ $? -ne 0 ]; then
-        log_error_exit "error trying to remove content of bags/ directory: $output"
-    fi 
-    update_log "$COLLECTION" "$WORKER" "collection refreshed"
-    python3 "$CSV_SCRIPT" $COLLECTION "status" "nan"
 }
 
 
 #main script
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-export_collection "$WORKER"
-if [ $? -ne 0 ]; then
-    log_error_exit "error running export collection script"
-fi
+
+
+#retry logic here
+until [ "$ATTEMPTS" -eq "$MAX_RETRIES" ];
+do 
+    
+    export_collection "$WORKER"
+    return_code=$?
+    if [ "$return_code" -ne 0 ]; then
+        ATTEMPTS=$(($ATTEMPTS + 1))
+    else
+        echo "export successful!"
+        break
+    fi
+
+done
+
+#checking to see if it ran out of tries
+if [ $ATTEMPTS -eq $MAX_RETRIES ]; then
+    log_error_exit "max retries reached, check error log for more information"
+fi 
+
