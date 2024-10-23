@@ -208,7 +208,6 @@ start_transfer() {
 run_automated_pittPax() {
     
     
-   
     python3 "$PITT_PAX_V2_SCRIPT" "1" "ALL" "1"
     if [ $? -ne 0 ]; then
         log_error_exit "unable to run the automated pitt pax script - proceed with interactive"
@@ -353,7 +352,7 @@ done
 if [ -f "$TEMP_FILE" ]; then
     #has items in it that need to be mailed
     DATE=$(date)
-    echo "$HOSTNAME run completed at $DATE" | mutt -a "$TEMP_FILE" -s 'Archive transfers complete - wait for OPEX' emv38@pitt.edu
+    #echo "$HOSTNAME run completed at $DATE" | mutt -a "$TEMP_FILE" -s 'Archive transfers complete - wait for OPEX' emv38@pitt.edu
 
     # rm -f "$TEMP_FILE"
     # if [ $? -ne 0 ]; then 
@@ -361,15 +360,5 @@ if [ -f "$TEMP_FILE" ]; then
     # fi
 
 fi 
-
-#display all the changes made after all four have been run
-# read -p "looped through all servers, restart (Y) or exit(N): " INPUT
-# if [ "$INPUT" = "Y" ]; then
-#     bash archiveAutomation.sh
-# elif [ "$INPUT" = "N" ]; then
-#     exit 0
-# else
-#     log_error_exit "ERROR at loop end didn't type either Y/N, instead typed $INPUT"
-# fi
 
 #-----------------------------------------------------------------------------------------
