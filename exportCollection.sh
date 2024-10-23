@@ -276,10 +276,10 @@ if [ $ATTEMPTS -eq $MAX_RETRIES ]; then
         COLLECTION=$(python3 "$CSV_SCRIPT" 'workerFind' $WORKER)
 
         #change to large
-        python3 "$CSV_SCRIPT" $COLLECTION "status" "LARGE" | log_error_exit "error changing collection to LARGE.. need to manually do so"
+        python3 "$CSV_SCRIPT" $COLLECTION "status" "LARGE" || log_error_exit "error changing collection to LARGE.. need to manually do so"
         exit 0
     fi
 
     log_error_exit "unknown error code reached: $return_code"
-    
+
 fi 
