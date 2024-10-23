@@ -207,32 +207,30 @@ start_transfer() {
 
 run_automated_pittPax() {
     
-    #pitt_pax_v2_path="/home/"$USER"/islandoraPreservicaExport/bagit-pax/pitt_pax_v2.py"
+    
    
     python3 "$PITT_PAX_V2_SCRIPT" "1" "ALL" "1"
     if [ $? -ne 0 ]; then
-        log_error_exit "unable to run the automated pitt pax script - proceeding with interactive"
+        log_error_exit "unable to run the automated pitt pax script - proceed with interactive"
     fi 
-    #python "$pitt_pax_v2_path" "first_step" "c_f_input" "send_to_s3"
+    
 }
 
 #remove all previous collections from shared mount of gmworkers, and pittpax location - 
 # $1 parameter is the gmworker server to delete from
 remove_old_collections() {
     
-    
 
-    ERROR_MSG=$(rm -rf /mounts/transient/pittpax/Master/Final/* 2>&1)
+    output=$(rm -rf /mounts/transient/pittpax/Master/Final/* 2>&1)
     if [ $? -ne 0 ]; then
-        log_error_exit "$ERROR_MSG"
+        log_error_exit "$output"
     fi
 
-    
     #echo "removing from: /mounts/transient/$1/bags/*"
 
-    ERROR_MSG=$(rm -rf /mounts/transient/$1/bags/* 2>&1)
+    output=$(rm -rf /mounts/transient/$1/bags/* 2>&1)
     if [ $? -ne 0 ]; then
-        log_error_exit "$ERROR_MSG"
+        log_error_exit "$output"
     fi
 
 }
