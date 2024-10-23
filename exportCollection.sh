@@ -240,7 +240,7 @@ export_collection() {
             ;;
         *)
             log_error "unknown status found for worker $WORKER in collection $COLLECTION"
-            return 1
+            return 2
             ;;
     esac
 
@@ -267,5 +267,19 @@ done
 
 #checking to see if it ran out of tries
 if [ $ATTEMPTS -eq $MAX_RETRIES ]; then
-    log_error_exit "max retries reached, check error log for more information"
+
+    if [ "$return_code" -eq 2 ]; then
+        echo "worker running archive03 with unknown status code"
+        exit 0
+    elif [ "$return_code" -eq 1 ]; then
+        log_error "exitted out of collection 3+ times... tagging collection as large and waiting for next"
+        COLLECTION=$(python3 "$CSV_SCRIPT" 'workerFind' $WORKER)
+
+        #change to large
+        python3 "$CSV_SCRIPT" $COLLECTION "status" "LARGE" | log_error_exit "error changing collection to LARGE.. need to manually do so"
+        exit 0
+    fi
+
+    log_error_exit "unknown error code reached: $return_code"
+    
 fi 
