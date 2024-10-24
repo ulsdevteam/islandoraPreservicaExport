@@ -20,10 +20,10 @@ if [ -f "$LOCK_FILE" ]; then
     LOCKED_PID=$(cat "$LOCK_FILE")
     #is process still running?
     if ps -p "$LOCKED_PID"; then
-        echo "script currently running with PID: $LOCKED_PID, exiting"
+        log_error "script currently running with PID: $LOCKED_PID, exiting"
         exit 0
     else
-        echo "old lock file, removing"
+        log_error "old lock file, removing"
         rm -f "$LOCK_FILE"
     fi 
 fi
@@ -140,7 +140,7 @@ check_worker_status() {
         log_error "ERROR found in worker $1"
         return 1;
     else
-        #echo "gmworker-0$1 still transferring.."
+        log_error "other error found within worker $1 with status: $STATUS"
         return 1;
     fi 
 
@@ -207,32 +207,29 @@ start_transfer() {
 
 run_automated_pittPax() {
     
-    #pitt_pax_v2_path="/home/"$USER"/islandoraPreservicaExport/bagit-pax/pitt_pax_v2.py"
-   
+    
     python3 "$PITT_PAX_V2_SCRIPT" "1" "ALL" "1"
     if [ $? -ne 0 ]; then
-        log_error_exit "unable to run the automated pitt pax script - proceeding with interactive"
+        log_error_exit "unable to run the automated pitt pax script - proceed with interactive"
     fi 
-    #python "$pitt_pax_v2_path" "first_step" "c_f_input" "send_to_s3"
+    
 }
 
 #remove all previous collections from shared mount of gmworkers, and pittpax location - 
 # $1 parameter is the gmworker server to delete from
 remove_old_collections() {
     
-    
 
-    ERROR_MSG=$(rm -rf /mounts/transient/pittpax/Master/Final/* 2>&1)
+    output=$(rm -rf /mounts/transient/pittpax/Master/Final/* 2>&1)
     if [ $? -ne 0 ]; then
-        log_error_exit "$ERROR_MSG"
+        log_error_exit "$output"
     fi
 
-    
     #echo "removing from: /mounts/transient/$1/bags/*"
 
-    ERROR_MSG=$(rm -rf /mounts/transient/$1/bags/* 2>&1)
+    output=$(rm -rf /mounts/transient/$1/bags/* 2>&1)
     if [ $? -ne 0 ]; then
-        log_error_exit "$ERROR_MSG"
+        log_error_exit "$output"
     fi
 
 }
@@ -357,7 +354,7 @@ done
 if [ -f "$TEMP_FILE" ]; then
     #has items in it that need to be mailed
     DATE=$(date)
-    echo "$HOSTNAME run completed at $DATE" | mutt -a "$TEMP_FILE" -s 'Archive transfers complete - wait for OPEX' emv38@pitt.edu
+    #echo "$HOSTNAME run completed at $DATE" | mutt -a "$TEMP_FILE" -s 'Archive transfers complete - wait for OPEX' emv38@pitt.edu
 
     # rm -f "$TEMP_FILE"
     # if [ $? -ne 0 ]; then 
@@ -365,15 +362,5 @@ if [ -f "$TEMP_FILE" ]; then
     # fi
 
 fi 
-
-#display all the changes made after all four have been run
-# read -p "looped through all servers, restart (Y) or exit(N): " INPUT
-# if [ "$INPUT" = "Y" ]; then
-#     bash archiveAutomation.sh
-# elif [ "$INPUT" = "N" ]; then
-#     exit 0
-# else
-#     log_error_exit "ERROR at loop end didn't type either Y/N, instead typed $INPUT"
-# fi
 
 #-----------------------------------------------------------------------------------------

@@ -142,7 +142,7 @@ def update_value(collection, column, value):
 
             #if process is complete remove the gmworker
             if value == "Complete" or value == "LARGE":
-                df.loc[collection, "worker"] = ""
+                df.loc[collection, "worker"] = 0
                 #df.loc[collection, "exportDate"] = date.today().strftime("%m/%d/%Y")
             track_change(collection, column, value)
             update_csv()

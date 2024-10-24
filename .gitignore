@@ -3,3 +3,5 @@ collection.*.csv
 lock/
 
 pitt.ini
+
+testing.sh
