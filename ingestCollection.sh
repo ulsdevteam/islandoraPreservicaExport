@@ -19,6 +19,8 @@ CSV_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/csvUpdate.py'
 PRESERVICA_INGEST_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/preservica-mark-ingested.sh'
 OPEX_DIR="/mounts/transient/automation/islandoraPreservicaExport/opex-logs/"$WORKER""
 
+HOME_DIR='/mounts/transient/automation/islandoraPreservicaExport'
+
 #create a lock file for cron jobs
 
 #lockfile generation
@@ -120,30 +122,41 @@ update_log() {
 
 }
 
+
+# ls /mounts/transient/automation/logs/ | grep "185" | cut -d "-" -f 2 | cut -d "." -f 1 = worker that is associated with the collection
+
+
 #ingest script to run through all collection.csv files
 
-#LOCAL_OPEX_DIR="/home/emv38/islandoraPreservicaExport/opex-logs/"$WORKER""
-for FILE in "$OPEX_DIR"/collection.*.csv; do
-    #for FILE in "$LOCAL_OPEX_DIR"/collection.*.csv; do
+for FILE in "$HOME_DIR"/collection.*.csv; do
+    
     if [ -f "$FILE" ]; then
 
         COLLECTION=$(basename "$FILE" .csv) 
         COLLECTION="${COLLECTION#collection.}"
         echo "collection number: $COLLECTION"
-        update_log "$COLLECTION" "$WORKER" "attempting ingest script for $FILE"
-        
-        if $PRESERVICA_INGEST_SCRIPT "$FILE"; then
-            update_log "$COLLECTION" "$WORKER" "ingest script completed - removing $FILE now"
 
-            #updating with current date to show ingest has completed
-            current_date=$(date +"%m/%d/%Y")
-            python3 "$CSV_SCRIPT" "$COLLECTION" 'exportDate' "$current_date"
+        #check worker 
+        CHECK_WORKER=$(ls /mounts/transient/automation/logs/ | grep "$COLLECTION" | cut -d "-" -f 2 | cut -d "." -f 1)
 
-            if ! rm "$FILE"; then
-                log_error "Error removing $FILE"
-            fi
-        else 
-            log_error "Error running ingest script for $FILE"
-        fi
+        if [ "$CHECK_WORKER" == "$WORKER" ]; then
+
+            update_log "$COLLECTION" "$WORKER" "attempting ingest script for $FILE"
+            
+            if $PRESERVICA_INGEST_SCRIPT "$FILE"; then
+                update_log "$COLLECTION" "$WORKER" "ingest script completed - removing $FILE now"
+
+                #updating with current date to show ingest has completed
+                current_date=$(date +"%m/%d/%Y")
+                python3 "$CSV_SCRIPT" "$COLLECTION" 'exportDate' "$current_date" || log_error_exit "error updating collection $COLLECTION with exportdate"
+
+                if ! rm "$FILE"; then
+                    log_error "Error removing $FILE"
+                fi
+            else 
+                log_error "Error running ingest script for $FILE"
+            fi            
+
+        fi 
     fi 
 done
