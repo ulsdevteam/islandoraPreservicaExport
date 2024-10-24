@@ -260,8 +260,10 @@ add_to_temp() {
     if [[ ! -f "$TEMP_FILE" ]]; then
         touch "$TEMP_FILE"
     fi
-
-    tail -1 "$CHECK_LOG_FILE" >> "$TEMP_FILE"
+    #date variable
+    DATE=$(date +"%b %d, %Y")
+    echo ""$DATE" | "$COLLECTION" | "$WORKER"" >> "$TEMP_FILE"
+    #tail -1 "$CHECK_LOG_FILE" >> "$TEMP_FILE"
     if [ $? -ne 0 ]; then
         log_error_exit "Error adding the last line of $COLLECTION-$WORKER.log to $TEMP_FILE"
     fi
