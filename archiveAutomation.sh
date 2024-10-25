@@ -193,14 +193,24 @@ start_transfer() {
         log_error_exit "Error copying /mounts/transient/$WORKER_NAME/bags/DC.xml to /mounts/transient/pittpax/Source/collection.$2/"
     fi 
 
+    # Count total zip files
+    total_files=$(ls /mounts/transient/$WORKER_NAME/bags/*.zip | wc -l)
+    processed_files=0
+    if [ "$total_files" -eq 0 ]; then
+        log_error_exit "No zip files found in /mounts/transient/$WORKER_NAME/bags/"
+    fi
+
     update_log "$2" "$1" "unzipping items into Source directory"
     for j in /mounts/transient/$WORKER_NAME/bags/*.zip; do 
-        update_log "$2" "$1" "$j"
+        #update_log "$2" "$1" "$j"
         echo "$j"
         unzip "$j" -d /mounts/transient/pittpax/Source/collection.$2/
         if [ $? -ne 0 ]; then
             log_error_exit "Error unzipping file $j to /mounts/transient/pittpax/Source/collection.$2/"
         fi
+        processed_files=$((processed_files + 1))
+        PERCENT=$((processed_files * 100 / total_files))
+        update_log "$2" "$1" ""$PERCENT"% completed.."
     done
     
 }
