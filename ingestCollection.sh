@@ -137,7 +137,7 @@ for FILE in "$HOME_DIR"/collection.*.csv; do
         echo "collection number: $COLLECTION"
 
         #check worker 
-        CHECK_WORKER=$(ls /mounts/transient/automation/logs/ | grep "$COLLECTION" | cut -d "-" -f 2 | cut -d "." -f 1)
+        CHECK_WORKER=$(ls /mounts/transient/automation/logs/ | grep ""$COLLECTION"-" | cut -d "-" -f 2 | cut -d "." -f 1)
 
         if [ "$CHECK_WORKER" == "$WORKER" ]; then
 
