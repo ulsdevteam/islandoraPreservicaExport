@@ -297,6 +297,7 @@ do
     0)
         COLLECTION=$(get_collection_number $i)
         if [ -z "$COLLECTION" ] || [ "$COLLECTION" -eq 1 ]; then
+            python3 $CSV_SCRIPT "$COLLECTION" "status" "archiveERROR"
             log_error_exit "Error getting a valid collection number for pa-gmworker-0$i"
         fi
 
@@ -308,6 +309,7 @@ do
 
         python3 $CSV_SCRIPT "$COLLECTION" "status" "transfered"
         if [ $? -ne 0 ]; then
+            python3 $CSV_SCRIPT "$COLLECTION" "status" "archiveERROR"
             log_error_exit "Error csvUpdate.py didn't update status successfully for collection $COLLECTION in pa-gmworker-0$i"
         fi      
         
