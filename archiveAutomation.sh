@@ -296,22 +296,22 @@ do
     case $worker_status in 
     0)
         COLLECTION=$(get_collection_number $i)
-        if [ -z "$COLLECTION" ] || [ "$COLLECTION" -eq 1 ]; then
-            python3 $CSV_SCRIPT "$COLLECTION" "status" "archiveERROR"
-            log_error_exit "Error getting a valid collection number for pa-gmworker-0$i"
-        fi
+        # if [ -z "$COLLECTION" ] || [ "$COLLECTION" -eq 1 ]; then
+        #     python3 $CSV_SCRIPT "$COLLECTION" "status" "archiveERROR"
+        #     log_error_exit "Error getting a valid collection number for pa-gmworker-0$i"
+        # fi
 
-        echo "starting transfer now"
-        update_log "$COLLECTION" "$i" "archive03 transfer starting"
+        echo "starting transfer now for collection $COLLECTION"
+        # update_log "$COLLECTION" "$i" "archive03 transfer starting"
 
-        python3 $CSV_SCRIPT "$COLLECTION" "status" "transferring"
-        start_transfer "$i" "$COLLECTION"
+        # python3 $CSV_SCRIPT "$COLLECTION" "status" "transferring"
+        # start_transfer "$i" "$COLLECTION"
 
-        python3 $CSV_SCRIPT "$COLLECTION" "status" "transfered"
-        if [ $? -ne 0 ]; then
-            python3 $CSV_SCRIPT "$COLLECTION" "status" "archiveERROR"
-            log_error_exit "Error csvUpdate.py didn't update status successfully for collection $COLLECTION in pa-gmworker-0$i"
-        fi      
+        # python3 $CSV_SCRIPT "$COLLECTION" "status" "transfered"
+        # if [ $? -ne 0 ]; then
+        #     python3 $CSV_SCRIPT "$COLLECTION" "status" "archiveERROR"
+        #     log_error_exit "Error csvUpdate.py didn't update status successfully for collection $COLLECTION in pa-gmworker-0$i"
+        # fi      
         
         # #separate method for python script to run
         # update_log "$COLLECTION" "$i" "starting pitt pax script"
@@ -352,38 +352,38 @@ do
         echo "automated pittpax starting"
 
         #separate method for python script to run
-        update_log "$COLLECTION" "$i" "starting pitt pax script"
-        run_automated_pittPax "$COLLECTION"
-        if [ $? -ne 0 ]; then 
-            python3 $CSV_SCRIPT "$COLLECTION" "status" "archiveERROR"
-            log_error_exit "error running automated pittpax script for collection $COLLECTION in pa-gmworker-0$i"
-        fi
-        update_log "$COLLECTION" "$i" "pitt pax script completed"
+        # update_log "$COLLECTION" "$i" "starting pitt pax script"
+        # run_automated_pittPax "$COLLECTION"
+        # if [ $? -ne 0 ]; then 
+        #     python3 $CSV_SCRIPT "$COLLECTION" "status" "archiveERROR"
+        #     log_error_exit "error running automated pittpax script for collection $COLLECTION in pa-gmworker-0$i"
+        # fi
+        # update_log "$COLLECTION" "$i" "pitt pax script completed"
 
         ;&
     2)
         echo "removing old collections"
 
-        update_log "$COLLECTION" "$i" "removing collections"
-        python3 $CSV_SCRIPT "$COLLECTION" "status" "removing"
-        remove_old_collections "pa-gmworker-0$i"
-        if [ $? -ne 0 ]; then
-            log_error_exit "error removing collections for collection $COLLECTION in pa-gmworker-0$i"
-        fi
+        # update_log "$COLLECTION" "$i" "removing collections"
+        # python3 $CSV_SCRIPT "$COLLECTION" "status" "removing"
+        # remove_old_collections "pa-gmworker-0$i"
+        # if [ $? -ne 0 ]; then
+        #     log_error_exit "error removing collections for collection $COLLECTION in pa-gmworker-0$i"
+        # fi
 
-        update_log "$COLLECTION" "$i" "$COLLECTION exported from pa-gmworker-0$i updating csv..."
-        python3 $CSV_SCRIPT "$COLLECTION" "status" "Complete"
-        if [ $? -ne 0 ]; then
-            log_error_exit "Error csvUpdate.py didn't update status to Complete successfully for collection $COLLECTION in pa-gmworker-0$i"
-        fi  
+        # update_log "$COLLECTION" "$i" "$COLLECTION exported from pa-gmworker-0$i updating csv..."
+        # python3 $CSV_SCRIPT "$COLLECTION" "status" "Complete"
+        # if [ $? -ne 0 ]; then
+        #     log_error_exit "Error csvUpdate.py didn't update status to Complete successfully for collection $COLLECTION in pa-gmworker-0$i"
+        # fi  
         
         ;&
     3)
         echo "assign new collection to worker"
-        assign_worker "$i"
-        if [ $? -ne 0 ]; then 
-            log_error_exit "error assigning new collection for pa-gmworker-0$i"
-        fi
+        # assign_worker "$i"
+        # if [ $? -ne 0 ]; then 
+        #     log_error_exit "error assigning new collection for pa-gmworker-0$i"
+        # fi
 
         ;;
     *)
