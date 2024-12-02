@@ -5,3 +5,19 @@ lock/
 pitt.ini
 
 testing.sh
+
+145-islandora-preservica.csv
+145_older_refs.csv
+145_refs.csv
+accessAPI.py
+checklogs.sh
+child_ref.csv
+collectionolder.145.csv
+compareData.py
+dc-ead-only.csv
+errors.log
+first-set.csv
+important-ids.csv
+modifycsv.py
+pref-only.csv
+refs-to-move.csv
