@@ -131,8 +131,10 @@ bagit_creation(){
 
     update_log "$COLLECTION" "$WORKER" "drush starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'bagit'
-    output=$(drush create-islandora-bag solr 'RELS_EXT_isMemberOfCollection_uri_ms:"info:fedora/pitt:collection.'$COLLECTION'" AND NOT RELS_EXT_preservicaExportDate_literal_s:*')
-    # drush create-islandora-bag solr 'RELS_EXT_isMemberOfCollection_uri_ms:"info:fedora/pitt:collection.'$COLLECTION'" AND NOT RELS_EXT_preservicaExportDate_literal_s:*'
+    output=$(drush create-islandora-bag solr 'RELS_EXT_isMemberOfCollection_uri_ms:"info:fedora/pitt:collection.'$COLLECTION'" NOT RELS_EXT_preservicaExportDate_literal_s:*')
+    # drush create-islandora-bag solr 'RELS_EXT_isMemberOfCollection_uri_ms:"info:fedora/pitt:collection.'$COLLECTION'" NOT RELS_EXT_preservicaExportDate_literal_s:*'
+
+
 
 
     if [ $? -ne 0 ]; then
