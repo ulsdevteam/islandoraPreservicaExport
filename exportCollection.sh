@@ -131,7 +131,9 @@ bagit_creation(){
 
     update_log "$COLLECTION" "$WORKER" "drush starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'bagit'
-    output=$(drush --uri=https://gamera.library.pitt.edu/ --root=/var/www/html/drupal7/ --user=$USER create-islandora-bag --resume collection pitt:collection."$COLLECTION" 2>&1)
+    output=$(drush create-islandora-bag solr 'RELS_EXT_isMemberOfCollection_uri_ms:"info:fedora/pitt:collection.'$COLLECTION'" AND NOT RELS_EXT_preservicaExportDate_literal_s:*')
+    # drush create-islandora-bag solr 'RELS_EXT_isMemberOfCollection_uri_ms:"info:fedora/pitt:collection.'$COLLECTION'" AND NOT RELS_EXT_preservicaExportDate_literal_s:*'
+
 
     if [ $? -ne 0 ]; then
         python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'ERROR'
