@@ -72,7 +72,7 @@ update_err() {
         echo "$ERROR_FILE exists, updating.."
     fi
     DATE=$(date +"%A, %B %d, %Y %I:%M %p")
-    echo "$DATE: $1" >> $ERROR_FILE
+    echo "$DATE on $0: $1" >> $ERROR_FILE
 }
 
 log_error_exit() {
