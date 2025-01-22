@@ -9,7 +9,6 @@ testing.sh
 145-islandora-preservica.csv
 145_older_refs.csv
 145_refs.csv
-accessAPI.py
 checklogs.sh
 child_ref.csv
 collectionolder.145.csv
