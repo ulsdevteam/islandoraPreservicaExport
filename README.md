@@ -75,3 +75,7 @@ status logs for the collection exports found at: /mounts/transient/automation/lo
 
     format: {collection number}-{gmworker #}.log
     example: 180-2.log
+
+## flow diagram
+![image](https://github.com/user-attachments/assets/81f58887-5129-4c0b-97ff-bcfce319846c)
+
