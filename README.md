@@ -11,8 +11,11 @@ This command take no input or parameters, but is dependent on an internal variab
 
 The script will add (or replace) the element of `islandora:preservicaExportDate` to the RELS-EXT with the datetime value of the export time per the Bag's file properties.
 
+## preservica-get-log.py
+A script to read Preservica OPEX ingest logs from the API, and ouput a CSV of the sourceId and the entityRef, to be used in `preservica-mark-ingested.sh`
+
 ## preservica-mark-ingested.sh
-A script to examine a download of a Process (Ingest Card) from the Preserica Monitor Processes interface, and then update the associated Islandora object's RELS-EXT datastream with a reference to the Preservica asset Ref.
+A script to examine a download of Preservica logs, and then update the associated Islandora object's RELS-EXT datastream with a reference to the Preservica asset Ref.
 
 This command takes a single argument of the path to the downloaded file.
 
