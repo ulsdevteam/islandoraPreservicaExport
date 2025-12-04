@@ -1,5 +1,5 @@
 #!/bin/bash
-# Where is the ingest monitor message file downloaded from Preservica?
+# Where is the downloaded API log from Preservica?
 MESSAGEFILE=$1
 if [ "$MESSAGEFILE" == "" ]
 then
@@ -46,7 +46,7 @@ do
     continue
   fi
   i=$TMPDIR/rels-ext/`echo $line | cut -d',' -f1`^RELS-EXT.rdf
-  PREF=`echo $line | cut -d',' -f2`
+  PREF=`echo $line | cut -d',' -f2 | tr -d '\n' | tr -d '\r'`
   # Transform the RELS-EXT with our XSLT, adding in the new presericaExportDate
   xsltproc --stringparam pref "$PREF" -o $i $TMPDIR/update-preservica-ingest.xsl $i
   if [[ $? -ne 0 ]]

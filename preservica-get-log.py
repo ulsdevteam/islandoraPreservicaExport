@@ -46,13 +46,12 @@ def authenticate():
 
 def refresh():
     global token, refresh_token, expiry_time
-    url = urljoin(BASE_URL, REFRESH_ENDPOINT)
+    url = urljoin(BASE_URL, REFRESH_ENDPOINT) + f"?refreshToken={refresh_token}"
     headers = {
         "Accept": "application/json",
         "Preservica-Access-Token": token
     }
-    data = {"refresh-token": refresh_token}
-    resp = requests.post(url, headers=headers, data=data)
+    resp = requests.post(url, headers=headers)
     resp.raise_for_status()
     result = resp.json()
     if not result.get("success"):
@@ -75,7 +74,6 @@ def get_headers():
 def fetch_paginated(url):
     """Fetch paginated results from given URL, yielding JSON 'value' objects."""
     while url:
-        ensure_token_valid()
         resp = requests.get(url, headers=get_headers())
         resp.raise_for_status()
         data = resp.json()
