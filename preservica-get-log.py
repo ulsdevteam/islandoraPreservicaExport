@@ -21,7 +21,7 @@ PASSWORD = config["password"]
 BASE_URL = config["base_url"]
 
 AUTH_ENDPOINT = "/api/accesstoken/login"
-REFRESH_ENDPOINT = "/api/acesstoken/refresh"
+REFRESH_ENDPOINT = "/api/accesstoken/refresh"
 MONITORS_ENDPOINT = "/api/processmonitor/monitors"
 MESSAGES_ENDPOINT = "/api/processmonitor/messages"
 
