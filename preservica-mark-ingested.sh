@@ -54,7 +54,7 @@ do
     >&2 echo "xsltproc failed on $i"
     ERRORFLAG=1
   fi 
-done < $1
+done < $MESSAGEFILE
 # Ensure no errors were caught before continuing
 if [[ "$ERRORFLAG" = "" ]]
 then
