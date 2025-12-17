@@ -27,20 +27,8 @@ cat <<'EOF'> $TMPDIR/undo-preservica-ingest.xsl
 </xsl:stylesheet>
 EOF
 
-# Use a python script to extract the fifth (islandora identifier) and sixth (preservica identifier) columns from the CSV
-cat <<'EOF'> $TMPDIR/extract-identifiers.py
-import sys
-import csv
-with open(sys.argv[1], 'r') as csvfile:
-  linereader = csv.reader(csvfile)
-  for line in linereader:
-    if line[4].startswith('pitt:'):
-      print(line[4] + '|' + line[5])
-EOF
-python $TMPDIR/extract-identifiers.py $MESSAGEFILE > $TMPDIR/id-pairs.pipe
-
 # Extract just the PIDs
-cut -d'|' -f1 $TMPDIR/id-pairs.pipe > $TMPDIR/dsio.pids
+cut -d',' -f1 $MESSAGEFILE > $TMPDIR/dsio.pids
 mkdir $TMPDIR/rels-ext
 
 # Fetch the RELS-EXT for each PID in the list
@@ -54,7 +42,7 @@ fi
 # Iterate across each PID
 while read -r line
 do
-  i=$TMPDIR/rels-ext/`echo $line | cut -d'|' -f1`^RELS-EXT.rdf
+  i=$TMPDIR/rels-ext/`echo $line | cut -d',' -f1`^RELS-EXT.rdf
   
   # Transform the RELS-EXT with our XSLT, removing the preservicaRef and restoring preservicaExportDate
   xsltproc -o $i $TMPDIR/undo-preservica-ingest.xsl $i
@@ -64,7 +52,7 @@ do
     >&2 echo "xsltproc failed on $i"
     ERRORFLAG=1
   fi 
-done < $TMPDIR/id-pairs.pipe
+done < $MESSAGEFILE
 
 # Ensure no errors were caught before continuing
 if [[ "$ERRORFLAG" = "" ]]
