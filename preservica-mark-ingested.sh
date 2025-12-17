@@ -29,7 +29,7 @@ cat <<'EOF'> $TMPDIR/update-preservica-ingest.xsl
 </xsl:stylesheet>
 EOF
 # Extract just the PIDs
-cut -d',' -f1 $1 | grep '^pitt:' > $TMPDIR/dsio.pids
+cut -d',' -f1 $MESSAGEFILE | grep '^pitt:' > $TMPDIR/dsio.pids
 mkdir $TMPDIR/rels-ext
 # Fetch the RELS-EXT for each PID in the list
 drush -qy --root=/var/www/html/drupal7/ --user=$USER --uri=http://gamera.library.pitt.edu islandora_datastream_crud_fetch_datastreams --pid_file=$TMPDIR/dsio.pids --dsid=RELS-EXT --datastreams_directory=$TMPDIR/rels-ext --filename_separator=^
