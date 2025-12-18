@@ -92,7 +92,7 @@ def main():
     monitors_url = urljoin(BASE_URL, MONITORS_ENDPOINT) + "?status=Succeeded&category=Ingest&subcategory=OPEX"
     # If an argument is supplied in YYYY-MM-DD format, we'll treat this as the starting date, UTC
     # This will also fetch the logs in date order
-    if sys.argv[1]:
+    if len(sys.argv) > 1 and sys.argv[1]:
         begin = None
         try:
             begin = datetime.datetime.strptime(sys.argv[1], '%Y-%m-%d')
