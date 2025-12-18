@@ -14,6 +14,9 @@ The script will add (or replace) the element of `islandora:preservicaExportDate`
 ## preservica-get-log.py
 A script to read Preservica OPEX ingest logs from the API, and ouput a CSV of the sourceId and the entityRef, to be used in `preservica-mark-ingested.sh`
 
+## preservica-filter-duplicates.py
+A script to read the output of preservica-get-log.py and check for any newly duplicated content.  Duplicated content will be described as PID, existing Preservica Ref, and new Preservica Refs to STDERR.  Nonduplicated content will be passed through to STDOUT.  Run with the "move" parameter to move duplicated content to a Preservica folder to be deleted.
+
 ## preservica-mark-ingested.sh
 A script to examine a download of Preservica logs, and then update the associated Islandora object's RELS-EXT datastream with a reference to the Preservica asset Ref.
 
