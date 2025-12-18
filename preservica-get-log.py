@@ -1,4 +1,5 @@
 import requests
+import datetime
 import time
 import csv
 import sys
@@ -89,6 +90,17 @@ def main():
 
     # Step 1: Collect mappedIds from monitors
     monitors_url = urljoin(BASE_URL, MONITORS_ENDPOINT) + "?status=Succeeded&category=Ingest&subcategory=OPEX"
+    # If an argument is supplied in YYYY-MM-DD format, we'll treat this as the starting date, UTC
+    # This will also fetch the logs in date order
+    if sys.argv[1]:
+        begin = None
+        try:
+            begin = datetime.datetime.strptime(sys.argv[1], '%Y-%m-%d')
+        except Exception as e:
+            print(e, file=sys.stderr)
+            print('Ignoring ' + sys.argv[1], file=sys.stderr)
+        if begin:
+            monitors_url += '&startedFrom=' + begin.isoformat() + '.000Z&sort=StartDate+ASC'
     mapped_ids = []
     for value in fetch_paginated(monitors_url):
         for monitor in value.get("monitors", []):
