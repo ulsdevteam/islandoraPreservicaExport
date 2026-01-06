@@ -14,8 +14,6 @@ ERRORFLAG=
 # Write out an XSL which restores the original state of RELS-EXT
 cat <<'EOF'> $TMPDIR/undo-preservica-ingest.xsl
 <xsl:stylesheet version="1.0" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-  <xsl:param name="pref" />
-  
   
   <xsl:template match="@*|node()">
     <xsl:copy>
@@ -24,35 +22,13 @@ cat <<'EOF'> $TMPDIR/undo-preservica-ingest.xsl
   </xsl:template>
   
   <!-- removing preservicaRef line -->
-  <xsl:template match="islandora:preservicaRef" />
-  
-  
-  <xsl:template match="rdf:Description">
-    <xsl:copy>
-      <xsl:apply-templates select="@*|node()"/>
-      
-      <islandora:preservicaExportDate>
-        <xsl:value-of select="$pref" />
-      </islandora:preservicaExportDate>
-    </xsl:copy>
-  </xsl:template>
+  <xsl:template match="rdf:Description/islandora:preservicaRef" />
+
 </xsl:stylesheet>
 EOF
 
-# Use a python script to extract the fifth (islandora identifier) and sixth (preservica identifier) columns from the CSV
-cat <<'EOF'> $TMPDIR/extract-identifiers.py
-import sys
-import csv
-with open(sys.argv[1], 'r') as csvfile:
-  linereader = csv.reader(csvfile)
-  for line in linereader:
-    if line[4].startswith('pitt:'):
-      print(line[4] + '|' + line[5])
-EOF
-python $TMPDIR/extract-identifiers.py $MESSAGEFILE > $TMPDIR/id-pairs.pipe
-
 # Extract just the PIDs
-cut -d'|' -f1 $TMPDIR/id-pairs.pipe > $TMPDIR/dsio.pids
+cut -d',' -f1 $MESSAGEFILE > $TMPDIR/dsio.pids
 mkdir $TMPDIR/rels-ext
 
 # Fetch the RELS-EXT for each PID in the list
@@ -66,18 +42,17 @@ fi
 # Iterate across each PID
 while read -r line
 do
-  i=$TMPDIR/rels-ext/`echo $line | cut -d'|' -f1`^RELS-EXT.rdf
-  PREF=`echo $line | cut -d'|' -f2`
+  i=$TMPDIR/rels-ext/`echo $line | cut -d',' -f1`^RELS-EXT.rdf
   
   # Transform the RELS-EXT with our XSLT, removing the preservicaRef and restoring preservicaExportDate
-  xsltproc --stringparam pref "$PREF" -o $i $TMPDIR/undo-preservica-ingest.xsl $i
+  xsltproc -o $i $TMPDIR/undo-preservica-ingest.xsl $i
   
   if [[ $? -ne 0 ]]
   then
     >&2 echo "xsltproc failed on $i"
     ERRORFLAG=1
   fi 
-done < $TMPDIR/id-pairs.pipe
+done < $MESSAGEFILE
 
 # Ensure no errors were caught before continuing
 if [[ "$ERRORFLAG" = "" ]]
