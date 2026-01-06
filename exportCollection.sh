@@ -243,7 +243,7 @@ export_collection() {
             exit 0
             ;;
         *)
-            log_error "unknown status found for worker $WORKER in collection $COLLECTION"
+            log_error "unknown status $TRANSFER_STATUS found for worker $WORKER in collection $COLLECTION"
             return 2
             ;;
     esac

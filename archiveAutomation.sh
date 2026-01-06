@@ -14,30 +14,6 @@ XML_ACCESS_SCRIPT='/mounts/transient/automation/islandoraPreservicaExport/xmlacc
 
 TEMP_FILE='/mounts/transient/automation/temp.log'
 
-#lockfile generation
-if [ -f "$LOCK_FILE" ]; then
-    #read PID
-    LOCKED_PID=$(cat "$LOCK_FILE")
-    #is process still running?
-    if ps -p "$LOCKED_PID"; then
-        log_error "script currently running with PID: $LOCKED_PID, exiting"
-        exit 0
-    else
-        log_error "old lock file, removing"
-        rm -f "$LOCK_FILE"
-    fi 
-fi
-
-#create lock file with current PID
-echo "$$" > $LOCK_FILE
-
-#unlock on exit
-unlock() {
-    rm -f "$LOCK_FILE"
-}
-trap unlock EXIT
-
-
 #what kind of error - in case you need to restart a collection
 log_error_exit() {
     update_err "$1"
@@ -76,6 +52,30 @@ update_err() {
     DATE=$(date +"%A, %B %d, %Y %I:%M %p")
     echo "$DATE at $HOSTNAME: $1" >> $ERROR_FILE
 }
+
+#lockfile generation
+if [ -f "$LOCK_FILE" ]; then
+    #read PID
+    LOCKED_PID=$(cat "$LOCK_FILE")
+    #is process still running?
+    if ps -p "$LOCKED_PID"; then
+        log_error "script currently running with PID: $LOCKED_PID, exiting"
+        exit 0
+    else
+        log_error "old lock file, removing"
+        rm -f "$LOCK_FILE"
+    fi
+fi
+
+#create lock file with current PID
+echo "$$" > $LOCK_FILE
+
+#unlock on exit
+unlock() {
+    rm -f "$LOCK_FILE"
+}
+trap unlock EXIT
+
 
 #log file update
 # $1 is collection
@@ -216,8 +216,8 @@ run_automated_pittPax() {
     COLLECTION=$1
 
     python3 $CSV_SCRIPT "$COLLECTION" "status" "ppax"
+    # parameters are: step 1 or 2, which containers to send (or ALL), upload to S3 (0 or 1)
     output=$(python3 "$PITT_PAX_V2_SCRIPT" "1" "ALL" "1" 2>&1)
-    #python3 "$PITT_PAX_V2_SCRIPT" "1" "ALL" "1"
     if [ $? -ne 0 ]; then
         log_error "unable to run the automated pitt pax script, see output: $output"
     fi  
@@ -387,7 +387,8 @@ do
 
         ;;
     *)
-        log_error_exit "unknown status code for worker $i: $worker_status"
+	>&2 echo "unknown status code for worker $i: $worker_status"
+        log_error "unknown status code for worker $i: $worker_status"
         ;;
     esac
 
