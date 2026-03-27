@@ -28,6 +28,11 @@ Edit the pitt.ini file to configure the the Preservica, S3, and local settings.
 
 Copy the content to be packaged into a directory within the Source directory indicated by the configuration.
 
+### Automated process option:
+when running pitt_pax_v2.py, three command line options can be entered: first_step c_f_input send_to_s3
+* if not entered (incorrectly or at all), the original interactive script will run
+* if entered and argumnents are correct, the automated version will run with given parameters
+
 Execute `pitt_pax_v2.py` via Python.  You will be prompted to either create a new package or upload an existing package.
 
 When creating a package, the script will:
