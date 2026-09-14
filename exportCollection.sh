@@ -153,7 +153,7 @@ DC_creation(){
 
     update_log "$COLLECTION" "$WORKER" "DC starting"
     python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'DC'
-    output=$(wget -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view 2>&1)
+    output=$(wget --no-check-certificate -O /bagit/bags/'DC.xml' https://gamera.library.pitt.edu/islandora/object/pitt:collection.$COLLECTION/datastream/DC/view 2>&1)
     
     if [ $? -ne 0 ]; then
         python3 "$CSV_SCRIPT" "$COLLECTION" 'status' 'ERROR'
