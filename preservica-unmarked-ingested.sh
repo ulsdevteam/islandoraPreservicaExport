@@ -24,11 +24,14 @@ cat <<'EOF'> $TMPDIR/undo-preservica-ingest.xsl
   <!-- removing preservicaRef line -->
   <xsl:template match="rdf:Description/islandora:preservicaRef" />
 
+  <!-- removing presericaExportDate line -->
+  <xsl:template match="rdf:Description/islandora:preservicaExportDate" />
+
 </xsl:stylesheet>
 EOF
 
 # Extract just the PIDs
-cut -d',' -f1 $MESSAGEFILE > $TMPDIR/dsio.pids
+cut -d',' -f1 $MESSAGEFILE | grep '^pitt:' > $TMPDIR/dsio.pids
 mkdir $TMPDIR/rels-ext
 
 # Fetch the RELS-EXT for each PID in the list
@@ -42,6 +45,10 @@ fi
 # Iterate across each PID
 while read -r line
 do
+  if [[ $line != "pitt:"* ]]
+  then
+    continue
+  fi
   i=$TMPDIR/rels-ext/`echo $line | cut -d',' -f1`^RELS-EXT.rdf
   
   # Transform the RELS-EXT with our XSLT, removing the preservicaRef and restoring preservicaExportDate

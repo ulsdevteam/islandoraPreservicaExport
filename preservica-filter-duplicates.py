@@ -10,7 +10,7 @@ Somehow we are still getting duplicate ingests for Islandora 7 content.  This sc
 Preservica process log (c.f. preservica-get-log.py) to abort the processing of duplicated objects, and to
 allow unduplicated object ids to be passed along to preserica-mark-ingested.sh.
 
-Given STDIN input of a CSV which has columns of (1) an Islandora PID, and (2) a Preservica entityId
+Given STDIN input of a CSV which has columns of (1) an Islandora PID (`sourceId`), and (2) a Preservica entityRef (`entityRef`)
 Check Preservica for other instances of objects with that same Islandora PID in the sourceId
 If other instances are found, notice of these duplicates and siblings will be written to STDERR
 if the parameter "move" is present,  move the new Preservica entity and any immediate siblings to a Trash folder
@@ -86,12 +86,15 @@ def main():
     out = []
     for row in reader:
         # Get the name and parent for the new entity
-        get_url = urljoin(BASE_URL, IO_ENDPOINT) + f"/{row['entityId']}"
+        get_url = urljoin(BASE_URL, IO_ENDPOINT) + f"/{row['entityRef']}"
         resp = requests.get(get_url, headers=get_headers())
         resp.raise_for_status()
         data = xml.etree.ElementTree.fromstring(resp.text)
-        name = data.find('.//{http://preservica.com/XIP/v8.3}InformationObject/{http://preservica.com/XIP/v8.3}Title').text
-        parent = data.find('.//{http://preservica.com/XIP/v8.3}InformationObject/{http://preservica.com/XIP/v8.3}Parent').text
+        try:
+          name = data.find('.//{http://preservica.com/XIP/v8.5}InformationObject/{http://preservica.com/XIP/v8.5}Title').text
+        except:
+          print(resp.text, file=sys.stderr)
+        parent = data.find('.//{http://preservica.com/XIP/v8.5}InformationObject/{http://preservica.com/XIP/v8.5}Parent').text
         # get all existing matches for the sourceId
         escaped_pid = quote(row['sourceId'])
         lookup_url = urljoin(BASE_URL, LOOKUP_ENDPOINT) + f"?type=SourceId&value={escaped_pid}"
@@ -100,8 +103,8 @@ def main():
         data = xml.etree.ElementTree.fromstring(resp.text)
         existing = None
         duplicateIds = []
-        for entity in data.findall('.//{http://preservica.com/EntityAPI/v8.3}Entities/{http://preservica.com/EntityAPI/v8.3}Entity'):
-            if entity.attrib['ref'] != row['entityId']:
+        for entity in data.findall('.//{http://preservica.com/EntityAPI/v8.5}Entities/{http://preservica.com/EntityAPI/v8.5}Entity'):
+            if entity.attrib['ref'] != row['entityRef']:
                 existing = entity.attrib['ref']
         # find all sibings of the new entity with the same name stem
         if existing:
