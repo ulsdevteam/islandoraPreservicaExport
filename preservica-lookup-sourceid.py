@@ -4,6 +4,7 @@ import csv
 import sys
 import json
 import xml.etree.ElementTree
+import io
 from urllib.parse import urljoin, quote
 """
 Given STDIN input of a CSV which has columns of (1) an Islandora PID (`sourceId`)
@@ -73,6 +74,33 @@ def get_headers():
         "Preservica-Access-Token": token
     }
 
+def parse_with_ns(xml_text):
+    """
+    Parse XML text while capturing all declared namespaces.
+    Returns (root_element, {prefix: uri, ...})
+    """
+    namespaces = {}
+    root = None
+
+    # iterparse needs a file-like object; wrap the string
+    for event, value in xml.etree.ElementTree.iterparse(io.StringIO(xml_text), events=("start-ns", "end")):
+        if event == "start-ns":
+            prefix, uri = value
+            namespaces[prefix] = uri
+        elif event == "end":
+            root = value  # the last "end" event is always the root element
+
+    return root, namespaces
+
+def find_namespace_by_prefix(namespaces, prefix):
+    """
+    Return the first namespace URI that starts with the given prefix string.
+    """
+    for uri in namespaces.values():
+        if uri.startswith(prefix):
+            return uri
+    raise ValueError(f"No namespace found starting with {prefix!r}")
+
 def main():
     authenticate()
 
@@ -85,9 +113,10 @@ def main():
         lookup_url = urljoin(BASE_URL, LOOKUP_ENDPOINT) + f"?type=SourceId&value={escaped_pid}"
         resp = requests.get(lookup_url, headers=get_headers())
         resp.raise_for_status()
-        data = xml.etree.ElementTree.fromstring(resp.text)
+        data, ns = parse_with_ns(resp.text)
+        versioned_ns = find_namespace_by_prefix(ns, 'http://preservica.com/EntityAPI/v')
         matches =[]
-        for entity in data.findall('.//{http://preservica.com/EntityAPI/v8.4}Entities/{http://preservica.com/EntityAPI/v8.4}Entity'):
+        for entity in data.findall(f'.//{{{versioned_ns}}}Entities/{{{versioned_ns}}}Entity'):
             matches.append(entity.attrib['ref'])
         if matches:
             line = { 'sourceId': row['sourceId'], 'entityId': ','.join(matches) }

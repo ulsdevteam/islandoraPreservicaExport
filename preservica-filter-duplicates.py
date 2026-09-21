@@ -4,6 +4,7 @@ import csv
 import sys
 import json
 import xml.etree.ElementTree
+import io
 from urllib.parse import urljoin, quote
 """
 Somehow we are still getting duplicate ingests for Islandora 7 content.  This script will filter output from a
@@ -79,6 +80,33 @@ def get_headers():
         "Preservica-Access-Token": token
     }
 
+def parse_with_ns(xml_text):
+    """
+    Parse XML text while capturing all declared namespaces.
+    Returns (root_element, {prefix: uri, ...})
+    """
+    namespaces = {}
+    root = None
+
+    # iterparse needs a file-like object; wrap the string
+    for event, value in xml.etree.ElementTree.iterparse(io.StringIO(xml_text), events=("start-ns", "end")):
+        if event == "start-ns":
+            prefix, uri = value
+            namespaces[prefix] = uri
+        elif event == "end":
+            root = value  # the last "end" event is always the root element
+
+    return root, namespaces
+
+def find_namespace_by_prefix(namespaces, prefix):
+    """
+    Return the first namespace URI that starts with the given prefix string.
+    """
+    for uri in namespaces.values():
+        if uri.startswith(prefix):
+            return uri
+    raise ValueError(f"No namespace found starting with {prefix!r}")
+
 def main():
     authenticate()
 
@@ -89,21 +117,24 @@ def main():
         get_url = urljoin(BASE_URL, IO_ENDPOINT) + f"/{row['entityRef']}"
         resp = requests.get(get_url, headers=get_headers())
         resp.raise_for_status()
-        data = xml.etree.ElementTree.fromstring(resp.text)
+        data, ns = parse_with_ns(resp.text)
+        versioned_ns = find_namespace_by_prefix(ns, 'http://preservica.com/XIP/v')
         try:
-          name = data.find('.//{http://preservica.com/XIP/v8.5}InformationObject/{http://preservica.com/XIP/v8.5}Title').text
+          name = data.find('.//{{{versioned_ns}}}InformationObject/{{{versioned_ns}}}Title').text
         except:
           print(resp.text, file=sys.stderr)
-        parent = data.find('.//{http://preservica.com/XIP/v8.5}InformationObject/{http://preservica.com/XIP/v8.5}Parent').text
+        parent = data.find(f'.//{{{versioned_ns}}}InformationObject/{{{versioned_ns}}}Parent').text
         # get all existing matches for the sourceId
         escaped_pid = quote(row['sourceId'])
         lookup_url = urljoin(BASE_URL, LOOKUP_ENDPOINT) + f"?type=SourceId&value={escaped_pid}"
         resp = requests.get(lookup_url, headers=get_headers())
         resp.raise_for_status()
         data = xml.etree.ElementTree.fromstring(resp.text)
+        data, ns = parse_with_ns(resp.text)
+        versioned_ns = find_namespace_by_prefix(ns, 'http://preservica.com/EntityAPI/v')
         existing = None
         duplicateIds = []
-        for entity in data.findall('.//{http://preservica.com/EntityAPI/v8.5}Entities/{http://preservica.com/EntityAPI/v8.5}Entity'):
+        for entity in data.findall('.//{{{versioned_ns}}}Entities/{{{versioned_ns}}}Entity'):
             if entity.attrib['ref'] != row['entityRef']:
                 existing = entity.attrib['ref']
         # find all sibings of the new entity with the same name stem
