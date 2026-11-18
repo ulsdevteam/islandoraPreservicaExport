@@ -25,11 +25,12 @@ global send_to_s3
 
 #check three parameters to make sure values are correct
 def checkParameters(first_step, c_f_input, send_to_s3):
-    if first_step != "1" and first_step != "2":
-        print("first paramter needs to be 1 or 2")
+    if first_step not in ("1", "2", "3"):
+        print("first paramter needs to be 1, 2 or 3")
         return False
-    if c_f_input != "ALL" and c_f_input != "QUIT" and not c_f_input.isdigit():
-        print("second paramter needs to specify which containers (ALL,1,2,3,QUIT)")
+    # allow ALL, QUIT, or one or more numbers like 1 or 1,2,3
+    if c_f_input not in ("ALL", "QUIT") and not re.fullmatch(r"\d+(,\d+)*", c_f_input):
+        print("second paramter needs to specify which containers (ALL,1,2,3,1\\,2,QUIT)")
         return False
     if send_to_s3 != "1" and send_to_s3 != "0":
         print("third param needs to be 1 or 0")
@@ -606,7 +607,7 @@ def mThread(c_list):
 def fStart_Workflow(fss_container):
     root_logger.info("fStart_Workflow")
     url = "https://" + hostval + "/sdb/rest/workflow/instances"
-    querystring = {"WorkflowContextId": " + wfcontextID + "}
+    querystring = {"WorkflowContextId": wfcontextID}
     payload1 = "<StartWorkflowRequest xmlns=\"http://workflow.preservica.com\">\r\n\t<WorkflowContextId>"
     payload2 = wfcontextID
     payload3 = "</WorkflowContextId>\r\n\t"
@@ -640,7 +641,7 @@ def fCheckWorkflowStatus(fc_wf_id):
     headers = new_token(username, password, basename)
     while True:
         if wf_loop_count > 10:
-            print("LOG INTO PRESERVICA AND CHECK THE WORKFLOW STATUS")
+            print("LOG INTO PRESERVICA AND CHECK THE WORKFLOW " + fc_wf_id + " STATUS")
             break
         time.sleep(60)
         url = "https://" + hostval + "/sdb/rest/workflow/instances/" + fc_wf_id
@@ -654,11 +655,77 @@ def fCheckWorkflowStatus(fc_wf_id):
         r_workflow_state = r_wf_tree.xpath("//xip_wf:WorkflowInstance/xip_wf:State", namespaces=NSMAP)
         for r_wfstate in range(len(r_workflow_state)):
             r_wf_state = r_workflow_state[r_wfstate].text
-            print("workflow state " + str(r_wf_state))
+            print("workflow " + fc_wf_id + " state " + str(r_wf_state))
         if r_wf_state.lower() != "active":
-            print("workflow state " + str(r_wf_state))
+            print("workflow " + fc_wf_id + " state " + str(r_wf_state))
             break
         wf_loop_count += 1
+
+
+def fListS3Containers():
+    """Return a sorted list of Container* 'folders' that already exist under bucket_prefix in S3."""
+    root_logger.info("fListS3Containers")
+    s3_client = boto3.client('s3', aws_access_key_id=AWS_Key, aws_secret_access_key=AWS_Secret)
+    s3_prefix = bucket_prefix.rstrip('/') + '/' if bucket_prefix else ''
+    containers = []
+    try:
+        paginator = s3_client.get_paginator('list_objects_v2')
+        for page in paginator.paginate(Bucket=bucket, Prefix=s3_prefix, Delimiter='/'):
+            for cp in page.get('CommonPrefixes', []):
+                name = cp['Prefix'][len(s3_prefix):].strip('/')
+                if name.lower().startswith('container'):
+                    containers.append(name)
+    except botocore.exceptions.ClientError as e:
+        root_logger.error(e)
+        print("Unable to list containers in S3: " + str(e))
+        return []
+    return sorted(containers)
+
+
+def fStartIngestFromS3():
+    """Interrogate S3 for already-uploaded containers and start the ingest workflow on the chosen ones."""
+    root_logger.info("fStartIngestFromS3")
+    containers = fListS3Containers()
+    if not containers:
+        print("No containers found in s3://" + bucket + "/" + bucket_prefix)
+        return
+
+    dict_containerf = {i: c for i, c in enumerate(containers, 1)}
+    print("****************************************")
+    for key, val in dict_containerf.items():
+        print(str(key) + "  : " + str(val))
+    print("Enter ALL to start ingest on all containers, enter the number of the container "
+          "(for multiple containers enter numbers separated by a comma ex: 1,2,3), or QUIT: ")
+
+    if isAutomated is True:
+        selection = c_f_input
+        print("using ", selection, " as input..")
+    else:
+        selection = input()
+    selection = selection.strip()
+
+    if selection.upper() == "QUIT":
+        sys.exit()
+    elif selection.upper() == "ALL":
+        selected = list(dict_containerf.values())
+    else:
+        selected = []
+        for item in selection.split(','):
+            item = item.strip()
+            if item.isdigit() and int(item) in dict_containerf:
+                container = dict_containerf[int(item)]
+                if container not in selected:
+                    selected.append(container)
+            else:
+                print("'" + item + "' is not in the list, skipping")
+
+    if not selected:
+        print("No valid containers selected")
+        return
+
+    print("Starting ingest workflow for: " + ", ".join(selected))
+    root_logger.info("Starting workflow for " + str(selected))
+    mThread(selected)   # runs fStart_Workflow for each container (max_worker_count at a time)
 
 
 # define ini file
@@ -718,7 +785,8 @@ if isAutomated is True:
     print("using ", first_step, " as input..")
 else:
     first_step = input(
-        'Select the process you would like to run. Enter 1 to Create New Containers or 2 to Upload Previously Created Containers :: ')
+        'Select the process you would like to run. Enter 1 to Create New Containers, '
+        '2 to Upload Previously Created Containers, or 3 to Start Ingest on Containers Already in S3 :: ')
 
 if first_step == '1':
     sanitize_working_area(masterDir_path, 'Working')
@@ -1070,7 +1138,7 @@ if first_step == '1':
 
     if send_to_s3 == '1':
         fListUploadDirectory()
-else:
+elif first_step == '2':
     final = Path(masterDir_path) / 'Final'
     logs = Path(masterDir_path) / 'Logs'
 
@@ -1084,3 +1152,10 @@ else:
 
     print('uploading containers to s3 bucket')
     fListUploadDirectory()
+
+elif first_step == '3':
+    print('starting ingest on containers already in s3 bucket')
+    fStartIngestFromS3()
+
+else:
+    print('invalid selection, exiting')
