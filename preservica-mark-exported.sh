@@ -67,7 +67,7 @@ fi
 for i in $DCFILES
 do
   # extract the PID (dc:identifier, begins with "pitt:")
-  PID=`xmllint --xpath '//*[local-name()="identifier" and namespace-uri()="http://purl.org/dc/elements/1.1/" and substring(text(), 1, 5)="pitt:"]/text()' $i 2> /dev/null`
+  PID=`xmllint --xpath '//*[local-name()="identifier" and namespace-uri()="http://purl.org/dc/elements/1.1/" and substring(text(), 1, 5)="pitt:"][1]/text()' $i 2> /dev/null`
   if [[ $? -eq 0 ]]
   then
     # to find the original Bag name, remove the TEMPDIR prefix, and data suffix
