@@ -14,6 +14,7 @@ ERRORFLAG=
 cat <<'EOF'> $TMPDIR/update-preservica-ingest.xsl
 <xsl:stylesheet version="1.0" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:param name="pref" />
+  <xsl:param name="exportDateIfMissing" />
   <xsl:template match="@*|node()">
     <xsl:copy>
       <xsl:apply-templates select="@*|node()"/>
@@ -24,6 +25,9 @@ cat <<'EOF'> $TMPDIR/update-preservica-ingest.xsl
     <xsl:copy>
       <xsl:apply-templates select="@*|node()"/>
       <islandora:preservicaRef><xsl:value-of select="$pref" /></islandora:preservicaRef>
+      <xsl:if test="not(islandora:preservicaExportDate)">
+        <islandora:preservicaExportDate><xsl:value-of select="$exportDateIfMissing" /></islandora:preservicaExportDate>
+      </xsl:if>
     </xsl:copy>
   </xsl:template>
 </xsl:stylesheet>
@@ -48,7 +52,8 @@ do
   i=$TMPDIR/rels-ext/`echo $line | cut -d',' -f1`^RELS-EXT.rdf
   PREF=`echo $line | cut -d',' -f2 | tr -d '\n' | tr -d '\r'`
   # Transform the RELS-EXT with our XSLT, adding in the new presericaExportDate
-  xsltproc --stringparam pref "$PREF" -o $i $TMPDIR/update-preservica-ingest.xsl $i
+  DEFAULT_DATE=`date -u "+%FT%T.%3NZ"`
+  xsltproc --stringparam pref "$PREF" --stringparam exportDateIfMissing "$DEFAULT_DATE" -o $i $TMPDIR/update-preservica-ingest.xsl $i
   if [[ $? -ne 0 ]]
   then
     >&2 echo "xsltproc failed on $i"
